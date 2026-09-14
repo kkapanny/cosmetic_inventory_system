@@ -1,6 +1,6 @@
 from datetime import date
 
-# Данные о косметическом средстве
+# данные о косметическом средстве
 product_name = "Тональный крем"
 brand = "L'Oreal"
 category = "Лицо"
@@ -10,7 +10,7 @@ today = date.today()
 
 
 def get_expiry_status(expiry_date, today):
-    """Определяет статус срока годности средства"""
+    """определяет статус срока годности средства"""
     days_left = (expiry_date - today).days
     if days_left < 0:
         return "Просрочено! Необходимо утилизировать"
@@ -20,7 +20,7 @@ def get_expiry_status(expiry_date, today):
 
 
 def get_quantity_status(quantity):
-    """Определяет статус наличия средства"""
+    """определяет статус наличия средства"""
     if quantity == 0:
         return "Средство закончилось"
     elif quantity == 1:
@@ -29,7 +29,7 @@ def get_quantity_status(quantity):
 
 
 def is_need_restock(quantity, expiry_date, today):
-    """Проверяет, нужно ли пополнить запас"""
+    """проверяет, нужно ли пополнить запас"""
     days_left = (expiry_date - today).days
     if quantity <= 1 or days_left <= 30:
         return True
@@ -37,11 +37,11 @@ def is_need_restock(quantity, expiry_date, today):
 
 
 def format_product_info(name, brand, category):
-    """Формирует строку с информацией о средстве"""
+    """формирует строку с информацией о средстве"""
     return f"{category} | {brand} — {name}"
 
 
-# Вывод информации о средстве
+# вывод информации о средстве
 print("=" * 40)
 print("Информация о косметическом средстве")
 print("=" * 40)
