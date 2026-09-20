@@ -1,1 +1,16 @@
+# Байт-код Python
+__pycache__/
+*.py[cod]
+
+# Виртуальные окружения
+venv/
 .venv/
+env/
+
+# Настройки IDE
+.vscode/
+.idea/
+
+# ОС
+.DS_Store
+Thumbs.db
