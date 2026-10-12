@@ -1,0 +1,26 @@
+[
+    {
+        "id": 1,
+        "name": "Тональный крем",
+        "brand": "L'Oreal",
+        "category": "Лицо",
+        "quantity": 1,
+        "expiry_date": "2026-12-01"
+    },
+    {
+        "id": 2,
+        "name": "Тушь для ресниц",
+        "brand": "Maybelline",
+        "category": "Глаза",
+        "quantity": 2,
+        "expiry_date": "2027-03-15"
+    },
+    {
+        "id": 3,
+        "name": "Шампунь",
+        "brand": "Estel",
+        "category": "Волосы",
+        "quantity": 0,
+        "expiry_date": "2027-08-20"
+    }
+]

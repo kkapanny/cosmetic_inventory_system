@@ -1,6 +1,7 @@
 # Байт-код Python
 __pycache__/
 *.py[cod]
+.pytest_cache/
 
 # Виртуальные окружения
 venv/
