@@ -1,11 +1,11 @@
-"""Сохранение и загрузка данных проекта в формате JSON."""
+# сохранение и загрузка данных проекта в формате JSON
 
 import json
 from pathlib import Path
 
 
+# загрузка списка средств из JSON-файла
 def load_products(filename: str | Path) -> list[dict]:
-    """Загрузить список средств из JSON-файла."""
     path = Path(filename)
     try:
         with path.open("r", encoding="utf-8") as file:
@@ -22,8 +22,8 @@ def load_products(filename: str | Path) -> list[dict]:
     return products
 
 
+# сохранение списка средств в JSON-файл
 def save_products(filename: str | Path, products: list[dict]) -> None:
-    """Сохранить список средств в JSON-файл."""
     path = Path(filename)
     try:
         path.parent.mkdir(parents=True, exist_ok=True)

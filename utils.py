@@ -1,14 +1,14 @@
-"""Вспомогательные функции безопасного пользовательского ввода."""
+# вспомогательные функции безопасного пользовательского ввода
 
 from datetime import date, datetime
 
 
+# запрос целого числа в заданном диапазоне
 def input_int(
     prompt: str,
     minimum: int | None = None,
     maximum: int | None = None,
 ) -> int:
-    """Запросить целое число в заданном диапазоне."""
     while True:
         try:
             value = int(input(prompt))
@@ -26,8 +26,8 @@ def input_int(
                 print("Введите корректное целое число.")
 
 
+# запрос даты в формате ДД.ММ.ГГГГ
 def input_date(prompt: str) -> date:
-    """Запросить дату в формате ДД.ММ.ГГГГ."""
     while True:
         try:
             return datetime.strptime(input(prompt), "%d.%m.%Y").date()

@@ -1,4 +1,4 @@
-"""Точка запуска системы учета косметики."""
+# точка запуска системы учета косметики
 
 from datetime import date
 from pathlib import Path
@@ -22,8 +22,8 @@ from utils import input_date, input_int
 DATA_FILE = Path(__file__).parent / "data" / "products.json"
 
 
+# вывод списка косметических средств
 def show_products(products: list[dict]) -> None:
-    """Вывести список косметических средств."""
     if not products:
         print("Список косметических средств пуст.")
         return
@@ -43,8 +43,8 @@ def show_products(products: list[dict]) -> None:
         print(f'   {get_quantity_status(product["quantity"])}')
 
 
+# вывод средств для пополнения или замены
 def show_restock_list(products: list[dict]) -> None:
-    """Вывести средства, которые необходимо пополнить или заменить."""
     restock_products = [
         product
         for product in products
@@ -67,8 +67,8 @@ def show_restock_list(products: list[dict]) -> None:
         print(f"- {product_info}")
 
 
+# вывод краткой статистики по косметическим средствам
 def show_statistics(products: list[dict]) -> None:
-    """Вывести краткую статистику по косметическим средствам."""
     statistics = get_inventory_statistics(products, date.today())
     print("\n=== Статистика ===")
     print(f'Позиций: {statistics["products_count"]}')
@@ -77,8 +77,8 @@ def show_statistics(products: list[dict]) -> None:
     print(f'Требуют пополнения или замены: {statistics["restock_count"]}')
 
 
+# вывод главного меню приложения
 def print_menu() -> None:
-    """Вывести главное меню приложения."""
     print("\n=== Cosmetic Inventory System ===")
     print("1. Показать все средства")
     print("2. Найти средство")
@@ -91,8 +91,8 @@ def print_menu() -> None:
     print("0. Выход")
 
 
+# запрос данных и добавление косметического средства
 def add_product_from_input(products: list[dict]) -> None:
-    """Запросить данные и добавить косметическое средство."""
     name = input("Название: ").strip()
     brand = input("Бренд: ").strip()
     category = input("Категория: ").strip()
@@ -116,15 +116,15 @@ def add_product_from_input(products: list[dict]) -> None:
     print(f'Средство добавлено с идентификатором {product["id"]}.')
 
 
+# поиск и вывод средств по запросу пользователя
 def find_products_from_input(products: list[dict]) -> None:
-    """Найти и вывести средства по запросу пользователя."""
     query = input("Введите название, бренд или категорию: ")
     found_products = find_products(products, query)
     show_products(found_products)
 
 
+# запрос нового количества выбранного средства
 def change_quantity_from_input(products: list[dict]) -> None:
-    """Запросить новое количество выбранного средства."""
     product_id = input_int("Идентификатор средства: ", minimum=1)
     quantity = input_int("Новое количество: ", minimum=0)
 
@@ -138,8 +138,8 @@ def change_quantity_from_input(products: list[dict]) -> None:
     print("Количество обновлено.")
 
 
+# удаление выбранного косметического средства
 def remove_product_from_input(products: list[dict]) -> None:
-    """Удалить выбранное косметическое средство."""
     product_id = input_int("Идентификатор средства: ", minimum=1)
 
     try:
@@ -152,8 +152,8 @@ def remove_product_from_input(products: list[dict]) -> None:
     print("Средство удалено.")
 
 
+# загрузка данных и запуск цикла главного меню
 def main() -> None:
-    """Загрузить данные и запустить цикл главного меню."""
     try:
         products = load_products(DATA_FILE)
     except ValueError as error:

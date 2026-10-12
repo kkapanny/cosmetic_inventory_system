@@ -1,11 +1,11 @@
-"""Функции для работы с косметическими средствами."""
+# функции для работы с косметическими средствами
 
 from datetime import date
 from typing import Iterator
 
 
+# определение статуса срока годности средства
 def get_expiry_status(expiry_date: date, today: date) -> str:
-    """Определить статус срока годности средства."""
     days_left = (expiry_date - today).days
     if days_left < 0:
         return "Просрочено! Необходимо утилизировать"
@@ -14,8 +14,8 @@ def get_expiry_status(expiry_date: date, today: date) -> str:
     return f"Срок годности в порядке (осталось {days_left} дн.)"
 
 
+# определение статуса наличия средства
 def get_quantity_status(quantity: int) -> str:
-    """Определить статус наличия средства."""
     if quantity == 0:
         return "Средство закончилось"
     if quantity == 1:
@@ -23,17 +23,18 @@ def get_quantity_status(quantity: int) -> str:
     return "В наличии"
 
 
+# проверка необходимости пополнения запаса или замены средства
 def is_need_restock(quantity: int, expiry_date: date, today: date) -> bool:
-    """Проверить, нужно ли пополнить запас или заменить средство."""
     days_left = (expiry_date - today).days
     return quantity <= 1 or days_left <= 30
 
 
+# формирование строки с информацией о средстве
 def format_product_info(name: str, brand: str, category: str) -> str:
-    """Сформировать строку с информацией о средстве."""
     return f"{category} | {brand} — {name}"
 
 
+# добавление косметического средства и возврат созданной записи
 def add_product(
     products: list[dict],
     name: str,
@@ -42,7 +43,6 @@ def add_product(
     quantity: int,
     expiry_date: date,
 ) -> dict:
-    """Добавить косметическое средство и вернуть созданную запись."""
     if not name or not brand or not category:
         raise ValueError("Название, бренд и категория не могут быть пустыми.")
     if quantity < 0:
@@ -61,10 +61,10 @@ def add_product(
     return product
 
 
+# перебор средств, совпадающих с поисковым запросом
 def iter_products_by_query(
     products: list[dict], query: str
 ) -> Iterator[dict]:
-    """Перебрать средства, совпадающие с поисковым запросом."""
     normalized_query = query.strip().lower()
     for product in products:
         searchable_values = (
@@ -78,20 +78,20 @@ def iter_products_by_query(
             yield product
 
 
+# поиск средств по названию, бренду или категории
 def find_products(products: list[dict], query: str) -> list[dict]:
-    """Найти средства по названию, бренду или категории."""
     return list(iter_products_by_query(products, query))
 
 
+# сортировка средств по сроку годности
 def sort_products_by_expiry(products: list[dict]) -> list[dict]:
-    """Вернуть средства, отсортированные по сроку годности."""
     return sorted(products, key=lambda product: product["expiry_date"])
 
 
+# изменение количества средства и возврат обновленной записи
 def change_product_quantity(
     products: list[dict], product_id: int, quantity: int
 ) -> dict:
-    """Изменить количество средства и вернуть обновленную запись."""
     if quantity < 0:
         raise ValueError("Количество не может быть отрицательным.")
 
@@ -102,8 +102,8 @@ def change_product_quantity(
     raise ValueError(f"Средство с идентификатором {product_id} не найдено.")
 
 
+# удаление средства по идентификатору и возврат удаленной записи
 def remove_product(products: list[dict], product_id: int) -> dict:
-    """Удалить средство по идентификатору и вернуть удаленную запись."""
     for product in products:
         if product["id"] == product_id:
             products.remove(product)
@@ -111,8 +111,8 @@ def remove_product(products: list[dict], product_id: int) -> dict:
     raise ValueError(f"Средство с идентификатором {product_id} не найдено.")
 
 
+# расчет сводной статистики по косметическим средствам
 def get_inventory_statistics(products: list[dict], today: date) -> dict:
-    """Рассчитать сводную статистику по косметическим средствам."""
     categories = {product["category"] for product in products}
     restock_count = sum(
         is_need_restock(
