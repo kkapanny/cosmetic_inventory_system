@@ -118,6 +118,16 @@ def find_products(
     return list(iter_products_by_query(products, query))
 
 
+# поиск косметического средства по идентификатору
+def find_product_by_id(
+    products: list[Product], product_id: int
+) -> Product | None:
+    for product in products:
+        if product.id == product_id:
+            return product
+    return None
+
+
 # сортировка средств по сроку годности
 def sort_products_by_expiry(
     products: list[Product],
