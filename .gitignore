@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 
+# Локальная база данных Django
+db.sqlite3
+
 # Виртуальные окружения
 venv/
 .venv/
