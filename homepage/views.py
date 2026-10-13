@@ -42,3 +42,24 @@ def index(request: HttpRequest) -> HttpResponse:
 </section>
 """
     return HttpResponse(page("Cosmetic Inventory System", content))
+
+
+def page_not_found(
+    request: HttpRequest, exception: Exception
+) -> HttpResponse:
+    content = """
+<section class="py-5 text-center">
+    <p class="display-1 fw-bold text-danger mb-2">404</p>
+    <h1>Страница не найдена</h1>
+    <p class="lead">
+        Проверьте адрес или вернитесь на главную страницу.
+    </p>
+    <a href="/" class="btn btn-primary">
+        На главную
+    </a>
+</section>
+"""
+    return HttpResponse(
+        page("404 — страница не найдена", content),
+        status=404,
+    )
