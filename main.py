@@ -3,15 +3,12 @@
 from datetime import date
 from pathlib import Path
 
-from products import (
+from models import Product
+from models.products import (
     add_product,
     change_product_quantity,
     find_products,
-    format_product_info,
-    get_expiry_status,
     get_inventory_statistics,
-    get_quantity_status,
-    is_need_restock,
     remove_product,
     sort_products_by_expiry,
 )
@@ -23,36 +20,30 @@ DATA_FILE = Path(__file__).parent / "data" / "products.json"
 
 
 # вывод списка косметических средств
-def show_products(products: list[dict]) -> None:
+def show_products(products: list[Product]) -> None:
     if not products:
         print("Список косметических средств пуст.")
         return
 
     print("\n=== Косметические средства ===")
+    today = date.today()
     for product in products:
-        expiry_date = date.fromisoformat(product["expiry_date"])
-        product_info = format_product_info(
-            product["name"], product["brand"], product["category"]
-        )
-        print(f'{product["id"]}. {product_info}')
+        print(f"{product.id}. {product}")
         print(
-            f'   Количество: {product["quantity"]} шт. | '
-            f'Годен до: {expiry_date:%d.%m.%Y}'
+            f"   Количество: {product.quantity} шт. | "
+            f"Годен до: {product.expiry_date:%d.%m.%Y}"
         )
-        print(f"   {get_expiry_status(expiry_date, date.today())}")
-        print(f'   {get_quantity_status(product["quantity"])}')
+        print(f"   {product.get_expiry_status(today)}")
+        print(f"   {product.get_quantity_status()}")
 
 
 # вывод средств для пополнения или замены
-def show_restock_list(products: list[dict]) -> None:
+def show_restock_list(products: list[Product]) -> None:
+    today = date.today()
     restock_products = [
         product
         for product in products
-        if is_need_restock(
-            product["quantity"],
-            date.fromisoformat(product["expiry_date"]),
-            date.today(),
-        )
+        if product.needs_restock(today)
     ]
 
     if not restock_products:
@@ -61,14 +52,11 @@ def show_restock_list(products: list[dict]) -> None:
 
     print("\n=== Список покупок ===")
     for product in restock_products:
-        product_info = format_product_info(
-            product["name"], product["brand"], product["category"]
-        )
-        print(f"- {product_info}")
+        print(f"- {product}")
 
 
 # вывод краткой статистики по косметическим средствам
-def show_statistics(products: list[dict]) -> None:
+def show_statistics(products: list[Product]) -> None:
     statistics = get_inventory_statistics(products, date.today())
     print("\n=== Статистика ===")
     print(f'Позиций: {statistics["products_count"]}')
@@ -92,7 +80,7 @@ def print_menu() -> None:
 
 
 # запрос данных и добавление косметического средства
-def add_product_from_input(products: list[dict]) -> None:
+def add_product_from_input(products: list[Product]) -> None:
     name = input("Название: ").strip()
     brand = input("Бренд: ").strip()
     category = input("Категория: ").strip()
@@ -113,18 +101,18 @@ def add_product_from_input(products: list[dict]) -> None:
         return
 
     save_products(DATA_FILE, products)
-    print(f'Средство добавлено с идентификатором {product["id"]}.')
+    print(f"Средство добавлено с идентификатором {product.id}.")
 
 
 # поиск и вывод средств по запросу пользователя
-def find_products_from_input(products: list[dict]) -> None:
+def find_products_from_input(products: list[Product]) -> None:
     query = input("Введите название, бренд или категорию: ")
     found_products = find_products(products, query)
     show_products(found_products)
 
 
 # запрос нового количества выбранного средства
-def change_quantity_from_input(products: list[dict]) -> None:
+def change_quantity_from_input(products: list[Product]) -> None:
     product_id = input_int("Идентификатор средства: ", minimum=1)
     quantity = input_int("Новое количество: ", minimum=0)
 
@@ -139,7 +127,7 @@ def change_quantity_from_input(products: list[dict]) -> None:
 
 
 # удаление выбранного косметического средства
-def remove_product_from_input(products: list[dict]) -> None:
+def remove_product_from_input(products: list[Product]) -> None:
     product_id = input_int("Идентификатор средства: ", minimum=1)
 
     try:
@@ -175,7 +163,12 @@ def main() -> None:
         print_menu()
         choice = input_int("Выберите действие: ", minimum=0, maximum=8)
         if choice == 0:
-            print("Данные сохранены. До свидания!")
+            try:
+                save_products(DATA_FILE, products)
+            except ValueError as error:
+                print(f"Ошибка сохранения данных: {error}")
+            else:
+                print("Данные сохранены. До свидания!")
             break
         actions[choice]()
 
