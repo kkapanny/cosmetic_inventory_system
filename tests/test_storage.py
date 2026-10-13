@@ -7,6 +7,18 @@ from models import Product
 from storage import load_products, save_products
 
 
+# создание тестового набора данных средства
+def make_product_data() -> dict[str, int | str]:
+    return {
+        "id": 1,
+        "name": "Крем",
+        "brand": "Librederm",
+        "category": "Лицо",
+        "quantity": 2,
+        "expiry_date": "2027-05-10",
+    }
+
+
 def test_save_and_load_products(tmp_path) -> None:
     filename = tmp_path / "products.json"
     products = [
@@ -20,8 +32,14 @@ def test_save_and_load_products(tmp_path) -> None:
         )
     ]
     save_products(filename, products)
+
+    assert json.loads(filename.read_text(encoding="utf-8")) == [
+        make_product_data()
+    ]
+
     loaded_products = load_products(filename)
     assert len(loaded_products) == 1
+    assert isinstance(loaded_products[0], Product)
     assert loaded_products[0].id == products[0].id
     assert loaded_products[0].name == products[0].name
     assert loaded_products[0].brand == products[0].brand
@@ -44,5 +62,39 @@ def test_load_invalid_json(tmp_path) -> None:
 def test_load_non_list_json(tmp_path) -> None:
     filename = tmp_path / "products.json"
     filename.write_text(json.dumps({"id": 1}), encoding="utf-8")
+    with pytest.raises(ValueError):
+        load_products(filename)
+
+
+def test_load_non_object_product(tmp_path) -> None:
+    filename = tmp_path / "products.json"
+    filename.write_text(json.dumps([1]), encoding="utf-8")
+    with pytest.raises(ValueError):
+        load_products(filename)
+
+
+def test_load_product_with_missing_field(tmp_path) -> None:
+    filename = tmp_path / "products.json"
+    product_data = make_product_data()
+    del product_data["brand"]
+    filename.write_text(json.dumps([product_data]), encoding="utf-8")
+    with pytest.raises(ValueError):
+        load_products(filename)
+
+
+def test_load_product_with_invalid_expiry_date(tmp_path) -> None:
+    filename = tmp_path / "products.json"
+    product_data = make_product_data()
+    product_data["expiry_date"] = "invalid date"
+    filename.write_text(json.dumps([product_data]), encoding="utf-8")
+    with pytest.raises(ValueError):
+        load_products(filename)
+
+
+def test_load_product_with_negative_quantity(tmp_path) -> None:
+    filename = tmp_path / "products.json"
+    product_data = make_product_data()
+    product_data["quantity"] = -1
+    filename.write_text(json.dumps([product_data]), encoding="utf-8")
     with pytest.raises(ValueError):
         load_products(filename)
