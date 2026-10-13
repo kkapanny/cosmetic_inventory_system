@@ -6,6 +6,7 @@ from models import Product
 from models.products import (
     add_product,
     change_product_quantity,
+    find_product_by_id,
     find_products,
     get_inventory_statistics,
     remove_product,
@@ -190,6 +191,12 @@ def test_find_products_is_case_insensitive() -> None:
     products = make_products()
     assert find_products(products, "l'oreal") == [products[0]]
     assert find_products(products, "ГЛАЗА") == [products[1]]
+
+
+def test_find_product_by_id() -> None:
+    products = make_products()
+    assert find_product_by_id(products, 1) is products[0]
+    assert find_product_by_id(products, 100) is None
 
 
 def test_sort_products_by_expiry() -> None:
