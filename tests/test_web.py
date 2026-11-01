@@ -1,4 +1,6 @@
+import inspect
 import os
+from datetime import date
 from unittest.mock import patch
 
 import django
@@ -9,6 +11,8 @@ from django.test import Client, override_settings
 from django.test.utils import setup_test_environment
 from django.urls import reverse
 
+from models import Product
+
 
 os.environ.setdefault(
     "DJANGO_SETTINGS_MODULE",
@@ -17,6 +21,9 @@ os.environ.setdefault(
 settings.DATABASES["default"]["NAME"] = ":memory:"
 django.setup()
 setup_test_environment()
+
+
+FIXED_TODAY = date(2026, 11, 1)
 
 
 # создание тестового HTTP-клиента
@@ -64,7 +71,10 @@ def test_homepage() -> None:
 
 
 def test_products_list_uses_json_data() -> None:
-    response = make_client().get("/products/")
+    with patch("products.views.date") as mocked_date:
+        mocked_date.today.return_value = FIXED_TODAY
+        response = make_client().get("/products/")
+
     html = response.content.decode()
 
     assert response.status_code == 200
@@ -96,7 +106,10 @@ def test_products_list_handles_empty_storage() -> None:
 
 
 def test_product_detail_uses_json_data() -> None:
-    response = make_client().get("/products/1/")
+    with patch("products.views.date") as mocked_date:
+        mocked_date.today.return_value = FIXED_TODAY
+        response = make_client().get("/products/1/")
+
     html = response.content.decode()
 
     assert response.status_code == 200
@@ -110,6 +123,43 @@ def test_product_detail_uses_json_data() -> None:
     assert "Заканчивается, стоит добавить в список покупок" in html
     assert "01.12.2026" in html
     assert 'href="/products/"' in html
+
+
+def test_product_detail_displays_normal_status() -> None:
+    with patch("products.views.date") as mocked_date:
+        mocked_date.today.return_value = FIXED_TODAY
+        response = make_client().get("/products/2/")
+
+    html = response.content.decode()
+    assert response.status_code == 200
+    assert response.context["needs_attention"] is False
+    assert response.context["quantity_status"] == "В наличии"
+    assert "В порядке" in html
+    assert "15.03.2027" in html
+
+
+def test_templates_escape_product_data() -> None:
+    product = Product(
+        product_id=7,
+        name="<script>alert('test')</script>",
+        brand="<b>Brand</b>",
+        category="<i>Category</i>",
+        quantity=2,
+        expiry_date=date(2027, 12, 1),
+    )
+
+    with (
+        patch("products.views.load_products", return_value=[product]),
+        patch("products.views.date") as mocked_date,
+    ):
+        mocked_date.today.return_value = FIXED_TODAY
+        response = make_client().get("/products/")
+
+    html = response.content.decode()
+    assert "&lt;script&gt;alert(&#x27;test&#x27;)&lt;/script&gt;" in html
+    assert "&lt;b&gt;Brand&lt;/b&gt;" in html
+    assert "&lt;i&gt;Category&lt;/i&gt;" in html
+    assert "<script>alert('test')</script>" not in html
 
 
 def test_unknown_product_returns_404() -> None:
@@ -135,3 +185,17 @@ def test_unknown_route_uses_custom_404_page() -> None:
     assert "Страница не найдена" in html
     assert "На главную" in html
     assert "bootstrap@5.3.3" in html
+
+
+def test_views_delegate_html_to_templates() -> None:
+    from homepage import views as homepage_views
+    from products import views as product_views
+
+    homepage_source = inspect.getsource(homepage_views)
+    products_source = inspect.getsource(product_views)
+
+    assert "def page(" not in homepage_source
+    for source in (homepage_source, products_source):
+        assert "<html" not in source
+        assert "<section" not in source
+        assert "HttpResponse(" not in source
