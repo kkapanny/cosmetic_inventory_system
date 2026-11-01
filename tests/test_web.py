@@ -89,11 +89,16 @@ def test_product_detail_uses_json_data() -> None:
     html = response.content.decode()
 
     assert response.status_code == 200
+    assert response.templates[0].name == "products/detail.html"
+    assert response.context["product"].id == 1
+    assert response.context["needs_attention"] is True
     assert "Тональный крем" in html
     assert "L&#x27;Oreal" in html
     assert "Лицо" in html
-    assert "Количество:</strong> 1 шт." in html
-    assert "Годен до:</strong>" in html
+    assert "1 шт." in html
+    assert "Заканчивается, стоит добавить в список покупок" in html
+    assert "01.12.2026" in html
+    assert 'href="/products/"' in html
 
 
 def test_unknown_product_returns_404() -> None:
@@ -101,7 +106,10 @@ def test_unknown_product_returns_404() -> None:
     html = response.content.decode()
 
     assert response.status_code == 404
+    assert response.templates[0].name == "products/not_found.html"
+    assert response.context["product_id"] == 999
     assert "Средство не найдено" in html
+    assert "999" in html
     assert "К списку средств" in html
 
 
@@ -111,6 +119,8 @@ def test_unknown_route_uses_custom_404_page() -> None:
     html = response.content.decode()
 
     assert response.status_code == 404
-    assert "404 — страница не найдена" in html
+    assert response.templates[0].name == "404.html"
+    assert "404: страница не найдена" in html
+    assert "Страница не найдена" in html
     assert "На главную" in html
     assert "bootstrap@5.3.3" in html

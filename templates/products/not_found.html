@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+    <section class="py-5" aria-labelledby="not-found-title">
+        <div class="row">
+            <div class="col-lg-7">
+                <p class="h6 text-danger mb-2">Ошибка 404</p>
+                <h1 id="not-found-title">Средство не найдено</h1>
+                <p class="lead mb-4">
+                    Средство с идентификатором
+                    <strong>{{ product_id }}</strong> отсутствует.
+                </p>
+                <a
+                    href="{% url 'products:list' %}"
+                    class="btn btn-outline-secondary"
+                >
+                    К списку средств
+                </a>
+            </div>
+        </div>
+    </section>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+    <section class="py-5" aria-labelledby="not-found-title">
+        <div class="row">
+            <div class="col-lg-7">
+                <p class="h6 text-danger mb-2">Ошибка 404</p>
+                <h1 id="not-found-title">Страница не найдена</h1>
+                <p class="lead mb-4">
+                    Проверьте адрес или вернитесь на главную страницу.
+                </p>
+                <a href="{% url 'homepage:index' %}" class="btn btn-primary">
+                    На главную
+                </a>
+            </div>
+        </div>
+    </section>
+{% endblock %}

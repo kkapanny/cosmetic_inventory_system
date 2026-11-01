@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+    <section class="py-4" aria-labelledby="product-title">
+        <div class="row">
+            <div class="col-lg-8">
+                <article class="card">
+                    <div class="card-body p-4">
+                        <header
+                            class="d-flex flex-column flex-sm-row justify-content-sm-between align-items-start gap-3 mb-4"
+                        >
+                            <h1 id="product-title" class="h3 mb-0">
+                                {{ product.name }}
+                            </h1>
+                            {% if needs_attention %}
+                                <span class="badge text-bg-warning flex-shrink-0">
+                                    Требует пополнения или замены
+                                </span>
+                            {% else %}
+                                <span class="badge text-bg-success flex-shrink-0">
+                                    В порядке
+                                </span>
+                            {% endif %}
+                        </header>
+
+                        <dl class="row gy-3 mb-4">
+                            <dt class="col-sm-4 text-secondary">ID</dt>
+                            <dd class="col-sm-8 mb-0">{{ product.id }}</dd>
+
+                            <dt class="col-sm-4 text-secondary">Бренд</dt>
+                            <dd class="col-sm-8 mb-0">
+                                {{ product.brand|default:"Не указан" }}
+                            </dd>
+
+                            <dt class="col-sm-4 text-secondary">Категория</dt>
+                            <dd class="col-sm-8 mb-0">
+                                {{ product.category|default:"Не указана" }}
+                            </dd>
+
+                            <dt class="col-sm-4 text-secondary">Количество</dt>
+                            <dd class="col-sm-8 mb-0">
+                                {{ product.quantity }} шт.<br>
+                                <span class="text-secondary">
+                                    {{ quantity_status }}
+                                </span>
+                            </dd>
+
+                            <dt class="col-sm-4 text-secondary">Годен до</dt>
+                            <dd class="col-sm-8 mb-0">
+                                {{ product.expiry_date|date:"d.m.Y" }}<br>
+                                <span class="text-secondary">
+                                    {{ expiry_status }}
+                                </span>
+                            </dd>
+                        </dl>
+
+                        <a
+                            href="{% url 'products:list' %}"
+                            class="btn btn-outline-secondary"
+                        >
+                            К списку средств
+                        </a>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
+{% endblock %}
