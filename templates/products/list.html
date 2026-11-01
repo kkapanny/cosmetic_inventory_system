@@ -7,12 +7,64 @@
         <header class="mb-4">
             <h1 id="products-title">Косметические средства</h1>
             <p class="lead mb-2">
-                Просматривайте косметику, количество и сроки годности.
+                Просматривайте и находите косметику из базы SQLite.
             </p>
             <p class="text-secondary mb-0">
                 Всего позиций: {{ product_items|length }}
             </p>
         </header>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="get" class="row g-3 align-items-end">
+                    <div class="col-lg-6">
+                        <label for="product-search" class="form-label">
+                            Поиск
+                        </label>
+                        <input
+                            id="product-search"
+                            class="form-control"
+                            type="search"
+                            name="q"
+                            value="{{ query }}"
+                            placeholder="Название, бренд или категория"
+                        >
+                    </div>
+                    <div class="col-sm-7 col-lg-4">
+                        <label for="category-filter" class="form-label">
+                            Категория
+                        </label>
+                        <select
+                            id="category-filter"
+                            class="form-select"
+                            name="category"
+                        >
+                            <option value="">Все категории</option>
+                            {% for category in categories %}
+                                <option
+                                    value="{{ category }}"
+                                    {% if category == selected_category %}selected{% endif %}
+                                >
+                                    {{ category }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-sm-5 col-lg-2 d-grid">
+                        <button class="btn btn-primary" type="submit">
+                            Найти
+                        </button>
+                    </div>
+                </form>
+                {% if query or selected_category %}
+                    <div class="mt-3">
+                        <a href="{% url 'products:list' %}">
+                            Сбросить фильтры
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
 
         <div class="list-group">
             {% for item in product_items %}
@@ -21,8 +73,7 @@
                 <div class="alert alert-info mb-0" role="status">
                     <h2 class="h5 alert-heading">Список средств пуст</h2>
                     <p class="mb-0">
-                        После добавления косметических средств они появятся
-                        на этой странице.
+                        По заданным условиям средства не найдены.
                     </p>
                 </div>
             {% endfor %}

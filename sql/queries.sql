@@ -37,9 +37,12 @@ SELECT
 FROM products
 JOIN brands ON products.brand_id = brands.id
 JOIN categories ON products.category_id = categories.id
-WHERE products.name LIKE ?
-   OR brands.name LIKE ?
-   OR categories.name LIKE ?
+WHERE (
+    products.name LIKE ?
+    OR brands.name LIKE ?
+    OR categories.name LIKE ?
+)
+AND (? = '' OR categories.name = ?)
 ORDER BY products.name;
 
 -- 4. Список средств выбранной категории

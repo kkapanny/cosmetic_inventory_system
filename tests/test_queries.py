@@ -43,7 +43,7 @@ def test_queries_file_contains_twelve_executable_queries(
     parameters = [
         (),
         (1,),
-        ("%крем%", "%крем%", "%крем%"),
+        ("%крем%", "%крем%", "%крем%", "", ""),
         ("Лицо",),
         (1,),
         ("2027-01-01",),

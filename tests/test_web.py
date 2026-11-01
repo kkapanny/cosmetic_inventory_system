@@ -34,6 +34,8 @@ def make_client() -> Client:
 def test_named_routes() -> None:
     assert reverse("homepage:index") == "/"
     assert reverse("products:list") == "/products/"
+    assert reverse("products:attention") == "/products/attention/"
+    assert reverse("products:statistics") == "/products/statistics/"
     assert reverse("products:detail", args=[1]) == "/products/1/"
 
 
@@ -43,6 +45,8 @@ def test_base_template_loads_shared_navigation() -> None:
     assert "<title>Cosmetic Inventory System</title>" in html
     assert 'href="/"' in html
     assert 'href="/products/"' in html
+    assert 'href="/products/attention/"' in html
+    assert 'href="/products/statistics/"' in html
     assert "Перейти к содержимому" in html
     assert '<main id="main-content"' in html
     assert 'href="/static/css/style.css"' in html
@@ -70,9 +74,8 @@ def test_homepage() -> None:
     assert 'aria-current="page"' in html
 
 
-def test_products_list_uses_json_data() -> None:
-    with patch("products.views.date") as mocked_date:
-        mocked_date.today.return_value = FIXED_TODAY
+def test_products_list_uses_sqlite_data() -> None:
+    with patch("products.views.current_date", return_value=FIXED_TODAY):
         response = make_client().get("/products/")
 
     html = response.content.decode()
@@ -94,20 +97,56 @@ def test_products_list_uses_json_data() -> None:
     assert 'href="/products/3/"' in html
 
 
-def test_products_list_handles_empty_storage() -> None:
-    with patch("products.views.load_products", return_value=[]):
+def test_products_list_handles_empty_result() -> None:
+    with patch("products.views.fetch_products", return_value=[]):
         response = make_client().get("/products/")
 
     html = response.content.decode()
     assert response.status_code == 200
     assert "Всего позиций: 0" in html
     assert "Список средств пуст" in html
-    assert "После добавления косметических средств" in html
+    assert "По заданным условиям средства не найдены" in html
 
 
-def test_product_detail_uses_json_data() -> None:
-    with patch("products.views.date") as mocked_date:
-        mocked_date.today.return_value = FIXED_TODAY
+def test_products_search_uses_query_parameter() -> None:
+    response = make_client().get("/products/", {"q": "Maybelline"})
+    html = response.content.decode()
+
+    assert response.status_code == 200
+    assert len(response.context["product_items"]) == 1
+    assert response.context["query"] == "Maybelline"
+    assert "Тушь для ресниц" in html
+    assert "Тональный крем" not in html
+    assert "Сбросить фильтры" in html
+
+
+def test_products_filter_uses_selected_category() -> None:
+    response = make_client().get("/products/", {"category": "Лицо"})
+    html = response.content.decode()
+
+    assert response.status_code == 200
+    assert len(response.context["product_items"]) == 1
+    assert response.context["selected_category"] == "Лицо"
+    assert "Тональный крем" in html
+    assert "Тушь для ресниц" not in html
+    assert "selected" in html
+
+
+def test_products_search_and_category_filter_work_together() -> None:
+    response = make_client().get(
+        "/products/",
+        {"q": "Т", "category": "Глаза"},
+    )
+    html = response.content.decode()
+
+    assert response.status_code == 200
+    assert len(response.context["product_items"]) == 1
+    assert "Тушь для ресниц" in html
+    assert "Тональный крем" not in html
+
+
+def test_product_detail_uses_sqlite_data() -> None:
+    with patch("products.views.current_date", return_value=FIXED_TODAY):
         response = make_client().get("/products/1/")
 
     html = response.content.decode()
@@ -126,8 +165,7 @@ def test_product_detail_uses_json_data() -> None:
 
 
 def test_product_detail_displays_normal_status() -> None:
-    with patch("products.views.date") as mocked_date:
-        mocked_date.today.return_value = FIXED_TODAY
+    with patch("products.views.current_date", return_value=FIXED_TODAY):
         response = make_client().get("/products/2/")
 
     html = response.content.decode()
@@ -148,11 +186,18 @@ def test_templates_escape_product_data() -> None:
         expiry_date=date(2027, 12, 1),
     )
 
+    product_row = {
+        "id": product.id,
+        "name": product.name,
+        "brand": product.brand,
+        "category": product.category,
+        "quantity": product.quantity,
+        "expiry_date": product.expiry_date.isoformat(),
+    }
     with (
-        patch("products.views.load_products", return_value=[product]),
-        patch("products.views.date") as mocked_date,
+        patch("products.views.fetch_products", return_value=[product_row]),
+        patch("products.views.current_date", return_value=FIXED_TODAY),
     ):
-        mocked_date.today.return_value = FIXED_TODAY
         response = make_client().get("/products/")
 
     html = response.content.decode()
@@ -160,6 +205,37 @@ def test_templates_escape_product_data() -> None:
     assert "&lt;b&gt;Brand&lt;/b&gt;" in html
     assert "&lt;i&gt;Category&lt;/i&gt;" in html
     assert "<script>alert('test')</script>" not in html
+
+
+def test_attention_page_combines_stock_and_expiry_filters() -> None:
+    with patch("products.views.current_date", return_value=FIXED_TODAY):
+        response = make_client().get("/products/attention/")
+    html = response.content.decode()
+
+    assert response.status_code == 200
+    assert response.templates[0].name == "products/attention.html"
+    assert len(response.context["product_items"]) == 2
+    assert "Тональный крем" in html
+    assert "Шампунь" in html
+    assert "Тушь для ресниц" not in html
+    assert "01.12.2026" in html
+    assert 'aria-current="page"' in html
+
+
+def test_statistics_page_uses_aggregate_queries() -> None:
+    with patch("products.views.current_date", return_value=FIXED_TODAY):
+        response = make_client().get("/products/statistics/")
+    html = response.content.decode()
+
+    assert response.status_code == 200
+    assert response.templates[0].name == "products/statistics.html"
+    assert response.context["totals"]["products_count"] == 3
+    assert response.context["totals"]["total_quantity"] == 3
+    assert response.context["attention_count"] == 2
+    assert "По категориям" in html
+    assert "По брендам" in html
+    assert "L&#x27;Oreal" in html
+    assert "Maybelline" in html
 
 
 def test_unknown_product_returns_404() -> None:

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+    <section class="py-4" aria-labelledby="attention-title">
+        <header class="mb-4">
+            <h1 id="attention-title">Средства, требующие внимания</h1>
+            <p class="lead mb-2">
+                Низкий остаток или срок годности в ближайшие 30 дней.
+            </p>
+            <p class="text-secondary mb-0">
+                Контрольная дата: {{ deadline|date:"d.m.Y" }}
+            </p>
+        </header>
+
+        <div class="list-group">
+            {% for item in product_items %}
+                {% include "products/includes/product_card.html" with product=item.product needs_attention=item.needs_attention only %}
+            {% empty %}
+                <div class="alert alert-success mb-0" role="status">
+                    Все средства имеют достаточный остаток и срок годности.
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+{% endblock %}

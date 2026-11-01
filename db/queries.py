@@ -69,17 +69,22 @@ def get_product(
 def search_products(
     query: str,
     db_path: str | Path = DB_PATH,
+    category: str = "",
 ) -> list[sqlite3.Row]:
     sql = f"""
         SELECT {PRODUCT_FIELDS}
         {PRODUCT_RELATIONS}
-        WHERE products.name LIKE ?
-           OR brands.name LIKE ?
-           OR categories.name LIKE ?
+        WHERE (
+            products.name LIKE ?
+            OR brands.name LIKE ?
+            OR categories.name LIKE ?
+        )
+        AND (? = '' OR categories.name = ?)
         ORDER BY products.name
     """
     pattern = f"%{query.strip()}%"
-    return fetch_all(sql, (pattern, pattern, pattern), db_path)
+    parameters = (pattern, pattern, pattern, category, category)
+    return fetch_all(sql, parameters, db_path)
 
 
 def list_products_by_category(

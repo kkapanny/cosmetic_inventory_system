@@ -23,11 +23,29 @@
             </li>
             <li class="nav-item">
                 <a
-                    class="nav-link px-2{% if request.resolver_match.namespace == 'products' %} active{% endif %}"
+                    class="nav-link px-2{% if request.resolver_match.url_name == 'list' or request.resolver_match.url_name == 'detail' %} active{% endif %}"
                     href="{% url 'products:list' %}"
-                    {% if request.resolver_match.namespace == 'products' %}aria-current="page"{% endif %}
+                    {% if request.resolver_match.url_name == 'list' or request.resolver_match.url_name == 'detail' %}aria-current="page"{% endif %}
                 >
                     Средства
+                </a>
+            </li>
+            <li class="nav-item">
+                <a
+                    class="nav-link px-2{% if request.resolver_match.url_name == 'attention' %} active{% endif %}"
+                    href="{% url 'products:attention' %}"
+                    {% if request.resolver_match.url_name == 'attention' %}aria-current="page"{% endif %}
+                >
+                    Требуют внимания
+                </a>
+            </li>
+            <li class="nav-item">
+                <a
+                    class="nav-link px-2{% if request.resolver_match.url_name == 'statistics' %} active{% endif %}"
+                    href="{% url 'products:statistics' %}"
+                    {% if request.resolver_match.url_name == 'statistics' %}aria-current="page"{% endif %}
+                >
+                    Статистика
                 </a>
             </li>
         </ul>

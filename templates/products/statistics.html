@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+    <section class="py-4" aria-labelledby="statistics-title">
+        <header class="mb-4">
+            <h1 id="statistics-title">Статистика инвентаря</h1>
+            <p class="lead mb-0">
+                Сводные показатели рассчитаны запросами к SQLite.
+            </p>
+        </header>
+
+        <div class="row g-3 mb-5">
+            <div class="col-sm-6 col-xl-3">
+                <article class="card h-100">
+                    <div class="card-body">
+                        <p class="text-secondary mb-1">Позиций</p>
+                        <p class="display-6 mb-0">{{ totals.products_count }}</p>
+                    </div>
+                </article>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <article class="card h-100">
+                    <div class="card-body">
+                        <p class="text-secondary mb-1">Всего единиц</p>
+                        <p class="display-6 mb-0">{{ totals.total_quantity }}</p>
+                    </div>
+                </article>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <article class="card h-100">
+                    <div class="card-body">
+                        <p class="text-secondary mb-1">Категорий</p>
+                        <p class="display-6 mb-0">{{ totals.categories_count }}</p>
+                    </div>
+                </article>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <article class="card h-100 border-warning">
+                    <div class="card-body">
+                        <p class="text-secondary mb-1">Требуют внимания</p>
+                        <p class="display-6 mb-0">{{ attention_count }}</p>
+                    </div>
+                </article>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-6">
+                <h2 class="h4">По категориям</h2>
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr>
+                                <th scope="col">Категория</th>
+                                <th scope="col">Позиций</th>
+                                <th scope="col">Единиц</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in category_statistics %}
+                                <tr>
+                                    <th scope="row">{{ item.category }}</th>
+                                    <td>{{ item.products_count }}</td>
+                                    <td>{{ item.total_quantity }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="3">Данные отсутствуют.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <h2 class="h4">По брендам</h2>
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr>
+                                <th scope="col">Бренд</th>
+                                <th scope="col">Позиций</th>
+                                <th scope="col">Единиц</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in brand_statistics %}
+                                <tr>
+                                    <th scope="row">{{ item.brand }}</th>
+                                    <td>{{ item.products_count }}</td>
+                                    <td>{{ item.total_quantity }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="3">Данные отсутствуют.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}
