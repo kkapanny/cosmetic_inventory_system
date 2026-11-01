@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 import django
 from django.conf import settings
+from django.contrib.staticfiles import finders
 from django.template.loader import render_to_string
 from django.test import Client, override_settings
 from django.test.utils import setup_test_environment
@@ -37,6 +38,16 @@ def test_base_template_loads_shared_navigation() -> None:
     assert 'href="/products/"' in html
     assert "Перейти к содержимому" in html
     assert '<main id="main-content"' in html
+    assert 'href="/static/css/style.css"' in html
+    assert 'src="/static/js/main.js"' in html
+    assert 'src="/static/img/logo.svg"' in html
+    assert "data-current-year" in html
+
+
+def test_static_assets_are_discoverable() -> None:
+    assert finders.find("css/style.css") is not None
+    assert finders.find("js/main.js") is not None
+    assert finders.find("img/logo.svg") is not None
 
 
 def test_homepage() -> None:

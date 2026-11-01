@@ -1,7 +1,15 @@
-<nav class="navbar bg-white border-bottom" aria-label="Основная навигация">
+{% load static %}
+<nav class="app-navbar navbar border-bottom" aria-label="Основная навигация">
     <div class="container d-flex flex-wrap gap-2">
         <a class="navbar-brand me-auto" href="{% url 'homepage:index' %}">
-            Cosmetic Inventory
+            <img
+                class="brand-mark"
+                src="{% static 'img/logo.svg' %}"
+                width="36"
+                height="36"
+                alt=""
+            >
+            <span>Cosmetic Inventory</span>
         </a>
         <ul class="navbar-nav flex-row flex-wrap gap-2">
             <li class="nav-item">

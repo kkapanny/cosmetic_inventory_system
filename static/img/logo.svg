@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+    <title>Cosmetic Inventory</title>
+    <rect width="64" height="64" rx="14" fill="#2f6b5b"/>
+    <circle
+        cx="32"
+        cy="32"
+        r="20"
+        fill="none"
+        stroke="#dcece6"
+        stroke-width="2"
+    />
+    <text
+        x="32"
+        y="38"
+        fill="#f6faf8"
+        font-family="system-ui, sans-serif"
+        font-size="18"
+        font-weight="700"
+        text-anchor="middle"
+    >CI</text>
+</svg>
