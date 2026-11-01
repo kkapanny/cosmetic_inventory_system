@@ -2,6 +2,7 @@ from datetime import date
 from pathlib import Path
 
 from django.http import HttpRequest, HttpResponse
+from django.shortcuts import render
 from django.utils.html import escape
 
 from homepage.views import page
@@ -14,51 +15,18 @@ DATA_FILE = Path(__file__).resolve().parent.parent / "data" / "products.json"
 
 def products(request: HttpRequest) -> HttpResponse:
     today = date.today()
-    items = ""
-    for product in load_products(DATA_FILE):
-        needs_attention = product.needs_restock(today)
-        status = "Требует внимания" if needs_attention else "В порядке"
-        badge = "text-bg-warning" if needs_attention else "text-bg-success"
-        items += f"""
-<a href="/products/{product.id}/"
-   class="list-group-item list-group-item-action">
-    <div class="d-flex justify-content-between align-items-start">
-        <div>
-            <h2 class="h5 mb-1">{escape(product.name)}</h2>
-            <p class="mb-1">
-                {escape(product.brand)} · {escape(product.category)}
-            </p>
-            <small>
-                Количество: {product.quantity} шт. ·
-                Годен до: {product.expiry_date:%d.%m.%Y}
-            </small>
-        </div>
-        <span class="badge {badge}">{status}</span>
-    </div>
-</a>
-"""
-
-    if items:
-        product_list = f'<div class="list-group">{items}</div>'
-    else:
-        product_list = """
-<div class="alert alert-info" role="alert">
-    Список косметических средств пуст.
-</div>
-"""
-
-    content = f"""
-<section class="py-4">
-    <h1>Косметические средства</h1>
-    <p class="lead">
-        Просматривайте косметику, количество и сроки годности.
-    </p>
-    {product_list}
-</section>
-"""
-    return HttpResponse(
-        page("Косметические средства", content)
-    )
+    product_items = [
+        {
+            "product": product,
+            "needs_attention": product.needs_restock(today),
+        }
+        for product in load_products(DATA_FILE)
+    ]
+    context = {
+        "page_title": "Косметические средства",
+        "product_items": product_items,
+    }
+    return render(request, "products/list.html", context)
 
 
 def product_detail(

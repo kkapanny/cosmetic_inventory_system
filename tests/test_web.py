@@ -1,4 +1,5 @@
 import os
+from unittest.mock import patch
 
 import django
 from django.conf import settings
@@ -56,12 +57,31 @@ def test_products_list_uses_json_data() -> None:
     html = response.content.decode()
 
     assert response.status_code == 200
+    assert response.templates[0].name == "products/list.html"
+    assert "products/includes/product_card.html" in {
+        template.name for template in response.templates
+    }
+    assert len(response.context["product_items"]) == 3
     assert "Тональный крем" in html
     assert "Тушь для ресниц" in html
     assert "Шампунь" in html
+    assert "Всего позиций: 3" in html
+    assert "Требует внимания" in html
+    assert "В порядке" in html
     assert 'href="/products/1/"' in html
     assert 'href="/products/2/"' in html
     assert 'href="/products/3/"' in html
+
+
+def test_products_list_handles_empty_storage() -> None:
+    with patch("products.views.load_products", return_value=[]):
+        response = make_client().get("/products/")
+
+    html = response.content.decode()
+    assert response.status_code == 200
+    assert "Всего позиций: 0" in html
+    assert "Список средств пуст" in html
+    assert "После добавления косметических средств" in html
 
 
 def test_product_detail_uses_json_data() -> None:

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+    <section class="py-4" aria-labelledby="products-title">
+        <header class="mb-4">
+            <h1 id="products-title">Косметические средства</h1>
+            <p class="lead mb-2">
+                Просматривайте косметику, количество и сроки годности.
+            </p>
+            <p class="text-secondary mb-0">
+                Всего позиций: {{ product_items|length }}
+            </p>
+        </header>
+
+        <div class="list-group">
+            {% for item in product_items %}
+                {% include "products/includes/product_card.html" with product=item.product needs_attention=item.needs_attention only %}
+            {% empty %}
+                <div class="alert alert-info mb-0" role="status">
+                    <h2 class="h5 alert-heading">Список средств пуст</h2>
+                    <p class="mb-0">
+                        После добавления косметических средств они появятся
+                        на этой странице.
+                    </p>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+{% endblock %}

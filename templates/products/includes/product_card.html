@@ -1,0 +1,30 @@
+<a
+    href="{% url 'products:detail' product.id %}"
+    class="list-group-item list-group-item-action p-3"
+>
+    <div
+        class="d-flex flex-column flex-sm-row justify-content-sm-between align-items-start gap-3"
+    >
+        <div>
+            <h2 class="h5 mb-1">{{ product.name }}</h2>
+            <p class="mb-2">
+                <span>{{ product.brand }}</span>
+                <span class="text-secondary" aria-hidden="true">/</span>
+                <span>{{ product.category }}</span>
+            </p>
+            <div class="d-flex flex-wrap gap-3 small text-secondary">
+                <span>Количество: {{ product.quantity }} шт.</span>
+                <span>Годен до: {{ product.expiry_date|date:"d.m.Y" }}</span>
+            </div>
+        </div>
+        {% if needs_attention %}
+            <span class="badge text-bg-warning flex-shrink-0">
+                Требует внимания
+            </span>
+        {% else %}
+            <span class="badge text-bg-success flex-shrink-0">
+                В порядке
+            </span>
+        {% endif %}
+    </div>
+</a>
