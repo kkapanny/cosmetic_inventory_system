@@ -1,4 +1,5 @@
 from django.http import HttpRequest, HttpResponse
+from django.shortcuts import render
 
 
 def page(title: str, content: str) -> str:
@@ -30,18 +31,10 @@ def page(title: str, content: str) -> str:
 
 
 def index(request: HttpRequest) -> HttpResponse:
-    content = """
-<section class="py-5 text-center">
-    <h1 class="display-4">Cosmetic Inventory System</h1>
-    <p class="lead">
-        Система учёта косметики, контроля запасов и сроков годности.
-    </p>
-    <a href="/products/" class="btn btn-primary btn-lg">
-        Посмотреть средства
-    </a>
-</section>
-"""
-    return HttpResponse(page("Cosmetic Inventory System", content))
+    context = {
+        "page_title": "Cosmetic Inventory System",
+    }
+    return render(request, "homepage/index.html", context)
 
 
 def page_not_found(

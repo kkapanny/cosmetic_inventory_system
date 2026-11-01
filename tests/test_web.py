@@ -2,8 +2,9 @@ import os
 
 import django
 from django.conf import settings
-from django.test import Client, override_settings
 from django.template.loader import render_to_string
+from django.test import Client, override_settings
+from django.test.utils import setup_test_environment
 from django.urls import reverse
 
 
@@ -13,6 +14,7 @@ os.environ.setdefault(
 )
 settings.DATABASES["default"]["NAME"] = ":memory:"
 django.setup()
+setup_test_environment()
 
 
 # создание тестового HTTP-клиента
@@ -41,9 +43,12 @@ def test_homepage() -> None:
     html = response.content.decode()
 
     assert response.status_code == 200
+    assert response.templates[0].name == "homepage/index.html"
+    assert response.context["page_title"] == "Cosmetic Inventory System"
     assert "Cosmetic Inventory System" in html
     assert "bootstrap@5.3.3" in html
     assert 'href="/products/"' in html
+    assert 'aria-current="page"' in html
 
 
 def test_products_list_uses_json_data() -> None:
