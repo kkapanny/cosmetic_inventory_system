@@ -3,6 +3,7 @@ import os
 import django
 from django.conf import settings
 from django.test import Client, override_settings
+from django.template.loader import render_to_string
 from django.urls import reverse
 
 
@@ -23,6 +24,16 @@ def test_named_routes() -> None:
     assert reverse("homepage:index") == "/"
     assert reverse("products:list") == "/products/"
     assert reverse("products:detail", args=[1]) == "/products/1/"
+
+
+def test_base_template_loads_shared_navigation() -> None:
+    html = render_to_string("base.html")
+
+    assert "<title>Cosmetic Inventory System</title>" in html
+    assert 'href="/"' in html
+    assert 'href="/products/"' in html
+    assert "Перейти к содержимому" in html
+    assert '<main id="main-content"' in html
 
 
 def test_homepage() -> None:

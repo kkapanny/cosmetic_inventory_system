@@ -1,0 +1,27 @@
+<nav class="navbar bg-white border-bottom" aria-label="Основная навигация">
+    <div class="container d-flex flex-wrap gap-2">
+        <a class="navbar-brand me-auto" href="{% url 'homepage:index' %}">
+            Cosmetic Inventory
+        </a>
+        <ul class="navbar-nav flex-row flex-wrap gap-2">
+            <li class="nav-item">
+                <a
+                    class="nav-link px-2{% if request.resolver_match.namespace == 'homepage' %} active{% endif %}"
+                    href="{% url 'homepage:index' %}"
+                    {% if request.resolver_match.namespace == 'homepage' %}aria-current="page"{% endif %}
+                >
+                    Главная
+                </a>
+            </li>
+            <li class="nav-item">
+                <a
+                    class="nav-link px-2{% if request.resolver_match.namespace == 'products' %} active{% endif %}"
+                    href="{% url 'products:list' %}"
+                    {% if request.resolver_match.namespace == 'products' %}aria-current="page"{% endif %}
+                >
+                    Средства
+                </a>
+            </li>
+        </ul>
+    </div>
+</nav>
