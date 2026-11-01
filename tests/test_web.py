@@ -3,6 +3,7 @@ import os
 import django
 from django.conf import settings
 from django.test import Client, override_settings
+from django.urls import reverse
 
 
 os.environ.setdefault(
@@ -16,6 +17,12 @@ django.setup()
 # создание тестового HTTP-клиента
 def make_client() -> Client:
     return Client(HTTP_HOST="localhost")
+
+
+def test_named_routes() -> None:
+    assert reverse("homepage:index") == "/"
+    assert reverse("products:list") == "/products/"
+    assert reverse("products:detail", args=[1]) == "/products/1/"
 
 
 def test_homepage() -> None:
