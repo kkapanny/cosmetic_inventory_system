@@ -1,4 +1,4 @@
--- Cosmetic Inventory System: структура базы данных
+-- структура базы данных
 
 CREATE TABLE IF NOT EXISTS brands (
     id INTEGER PRIMARY KEY,
