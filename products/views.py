@@ -1,20 +1,11 @@
 from datetime import date, timedelta
 
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Count, F, Q, Sum
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, render
 
-from db.queries import (
-    get_attention_count,
-    get_brand_statistics,
-    get_category_statistics,
-    get_inventory_totals,
-    list_expiring_products,
-    list_low_stock_products,
-)
-from models import Product as LegacyProduct
-from products.models import Category, Product
+from products.models import Brand, Category, Product
 
 
 PRODUCTS_PER_PAGE = 6
@@ -29,31 +20,7 @@ def current_date() -> date:
     return date.today()
 
 
-def row_to_product(row) -> LegacyProduct:
-    return LegacyProduct(
-        product_id=row["id"],
-        name=row["name"],
-        brand=row["brand"],
-        category=row["category"],
-        quantity=row["quantity"],
-        expiry_date=date.fromisoformat(row["expiry_date"]),
-    )
-
-
-def prepare_product_items(rows, today: date) -> list[dict[str, object]]:
-    product_items = []
-    for row in rows:
-        product = row_to_product(row)
-        product_items.append(
-            {
-                "product": product,
-                "needs_attention": product.needs_restock(today),
-            }
-        )
-    return product_items
-
-
-def prepare_orm_product_items(
+def prepare_product_items(
     products,
     today: date,
 ) -> list[dict[str, object]]:
@@ -93,7 +60,7 @@ def products(request: HttpRequest) -> HttpResponse:
     )
     paginator = Paginator(products_query, PRODUCTS_PER_PAGE)
     page_obj = paginator.get_page(request.GET.get("page"))
-    product_items = prepare_orm_product_items(
+    product_items = prepare_product_items(
         page_obj.object_list,
         current_date(),
     )
@@ -144,18 +111,17 @@ def product_detail(
 def attention(request: HttpRequest) -> HttpResponse:
     today = current_date()
     deadline = today + timedelta(days=30)
-    rows = {
-        row["id"]: row
-        for row in (
-            list_low_stock_products()
-            + list_expiring_products(deadline)
-        )
-    }
-    ordered_rows = sorted(
-        rows.values(),
-        key=lambda row: (row["expiry_date"], row["name"]),
+    products_query = Product.objects.select_related(
+        "brand",
+        "category",
+    ).filter(
+        Q(quantity__lte=1) | Q(expiry_date__lte=deadline)
+    ).order_by(
+        "expiry_date",
+        "name",
+        "pk",
     )
-    product_items = prepare_product_items(ordered_rows, today)
+    product_items = prepare_product_items(products_query, today)
     context = {
         "page_title": "Требуют внимания",
         "product_items": product_items,
@@ -166,11 +132,46 @@ def attention(request: HttpRequest) -> HttpResponse:
 
 def statistics(request: HttpRequest) -> HttpResponse:
     deadline = current_date() + timedelta(days=30)
+    totals = Product.objects.aggregate(
+        products_count=Count("pk"),
+        total_quantity=Sum("quantity", default=0),
+        brands_count=Count("brand", distinct=True),
+        categories_count=Count("category", distinct=True),
+    )
+    attention_count = Product.objects.filter(
+        Q(quantity__lte=1) | Q(expiry_date__lte=deadline)
+    ).count()
+    category_statistics = (
+        Category.objects.annotate(
+            products_count=Count("products"),
+            total_quantity=Sum("products__quantity", default=0),
+        )
+        .values(
+            "id",
+            "products_count",
+            "total_quantity",
+            category=F("name"),
+        )
+        .order_by("category")
+    )
+    brand_statistics = (
+        Brand.objects.annotate(
+            products_count=Count("products"),
+            total_quantity=Sum("products__quantity", default=0),
+        )
+        .values(
+            "id",
+            "products_count",
+            "total_quantity",
+            brand=F("name"),
+        )
+        .order_by("brand")
+    )
     context = {
         "page_title": "Статистика инвентаря",
-        "totals": get_inventory_totals(),
-        "attention_count": get_attention_count(deadline),
-        "category_statistics": get_category_statistics(),
-        "brand_statistics": get_brand_statistics(),
+        "totals": totals,
+        "attention_count": attention_count,
+        "category_statistics": category_statistics,
+        "brand_statistics": brand_statistics,
     }
     return render(request, "products/statistics.html", context)

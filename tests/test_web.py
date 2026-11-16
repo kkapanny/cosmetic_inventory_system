@@ -271,7 +271,7 @@ def test_templates_escape_product_data() -> None:
     assert "<script>alert('test')</script>" not in html
 
 
-def test_attention_page_combines_stock_and_expiry_filters() -> None:
+def test_attention_page_uses_orm_stock_and_expiry_filters() -> None:
     with patch("products.views.current_date", return_value=FIXED_TODAY):
         response = make_client().get("/products/attention/")
     html = response.content.decode()
@@ -286,7 +286,7 @@ def test_attention_page_combines_stock_and_expiry_filters() -> None:
     assert 'aria-current="page"' in html
 
 
-def test_statistics_page_uses_aggregate_queries() -> None:
+def test_statistics_page_uses_orm_aggregates() -> None:
     with patch("products.views.current_date", return_value=FIXED_TODAY):
         response = make_client().get("/products/statistics/")
     html = response.content.decode()
@@ -295,11 +295,14 @@ def test_statistics_page_uses_aggregate_queries() -> None:
     assert response.templates[0].name == "products/statistics.html"
     assert response.context["totals"]["products_count"] == 3
     assert response.context["totals"]["total_quantity"] == 3
+    assert response.context["totals"]["brands_count"] == 3
+    assert response.context["totals"]["categories_count"] == 3
     assert response.context["attention_count"] == 2
     assert "По категориям" in html
     assert "По брендам" in html
     assert "L&#x27;Oreal" in html
     assert "Maybelline" in html
+    assert "средствами Django ORM" in html
 
 
 def test_unknown_product_returns_404() -> None:
@@ -339,3 +342,7 @@ def test_views_delegate_html_to_templates() -> None:
         assert "<html" not in source
         assert "<section" not in source
         assert "HttpResponse(" not in source
+
+    assert "db.queries" not in products_source
+    assert "sqlite3" not in products_source
+    assert "cursor.execute" not in products_source
