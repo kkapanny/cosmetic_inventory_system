@@ -1,26 +1,13 @@
 import inspect
-import os
 from datetime import date
 from unittest.mock import patch
 
-import django
-from django.conf import settings
 from django.contrib.staticfiles import finders
 from django.template.loader import render_to_string
 from django.test import Client, override_settings
-from django.test.utils import setup_test_environment
 from django.urls import reverse
 
-from models import Product
-
-
-os.environ.setdefault(
-    "DJANGO_SETTINGS_MODULE",
-    "cosmetic_inventory.settings",
-)
-settings.DATABASES["default"]["NAME"] = ":memory:"
-django.setup()
-setup_test_environment()
+from products.models import Brand, Category, Product
 
 
 FIXED_TODAY = date(2026, 11, 1)
@@ -74,7 +61,7 @@ def test_homepage() -> None:
     assert 'aria-current="page"' in html
 
 
-def test_products_list_uses_sqlite_data() -> None:
+def test_products_list_uses_orm_data() -> None:
     with patch("products.views.current_date", return_value=FIXED_TODAY):
         response = make_client().get("/products/")
 
@@ -86,6 +73,7 @@ def test_products_list_uses_sqlite_data() -> None:
         template.name for template in response.templates
     }
     assert len(response.context["product_items"]) == 3
+    assert response.context["page_obj"].paginator.count == 3
     assert "Тональный крем" in html
     assert "Тушь для ресниц" in html
     assert "Шампунь" in html
@@ -98,8 +86,10 @@ def test_products_list_uses_sqlite_data() -> None:
 
 
 def test_products_list_handles_empty_result() -> None:
-    with patch("products.views.fetch_products", return_value=[]):
-        response = make_client().get("/products/")
+    response = make_client().get(
+        "/products/",
+        {"q": "несуществующее средство"},
+    )
 
     html = response.content.decode()
     assert response.status_code == 200
@@ -145,7 +135,80 @@ def test_products_search_and_category_filter_work_together() -> None:
     assert "Тональный крем" not in html
 
 
-def test_product_detail_uses_sqlite_data() -> None:
+def test_products_sort_by_quantity() -> None:
+    response = make_client().get(
+        "/products/",
+        {"sort": "quantity"},
+    )
+
+    names = [
+        item["product"].name
+        for item in response.context["product_items"]
+    ]
+    assert names == [
+        "Шампунь",
+        "Тональный крем",
+        "Тушь для ресниц",
+    ]
+    assert response.context["selected_sort"] == "quantity"
+
+
+def test_products_handle_invalid_sort_and_page_parameters() -> None:
+    response = make_client().get(
+        "/products/",
+        {
+            "sort": "unknown",
+            "page": "not-a-number",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.context["selected_sort"] == "expiry"
+    assert response.context["page_obj"].number == 1
+
+
+def test_products_paginate_and_preserve_query_parameters() -> None:
+    brand = Brand.objects.get(name="L'Oreal")
+    category = Category.objects.get(name="Лицо")
+    added_products = Product.objects.bulk_create(
+        [
+            Product(
+                name=f"Тестовое средство {number}",
+                brand=brand,
+                category=category,
+                quantity=number,
+                expiry_date=date(2028, 1, number + 1),
+            )
+            for number in range(7)
+        ]
+    )
+
+    try:
+        response = make_client().get(
+            "/products/",
+            {
+                "category": "Лицо",
+                "sort": "name",
+                "page": "2",
+            },
+        )
+        html = response.content.decode()
+
+        page_obj = response.context["page_obj"]
+        assert page_obj.paginator.count == 8
+        assert page_obj.paginator.num_pages == 2
+        assert page_obj.number == 2
+        assert len(response.context["product_items"]) == 2
+        assert "page=1" in html
+        assert "sort=name" in html
+        assert "category=%D0%9B%D0%B8%D1%86%D0%BE" in html
+    finally:
+        Product.objects.filter(
+            pk__in=[product.pk for product in added_products]
+        ).delete()
+
+
+def test_product_detail_uses_orm_data() -> None:
     with patch("products.views.current_date", return_value=FIXED_TODAY):
         response = make_client().get("/products/1/")
 
@@ -177,28 +240,29 @@ def test_product_detail_displays_normal_status() -> None:
 
 
 def test_templates_escape_product_data() -> None:
-    product = Product(
-        product_id=7,
+    brand = Brand.objects.create(name="<b>Brand</b>")
+    category = Category.objects.create(name="<i>Category</i>")
+    product = Product.objects.create(
         name="<script>alert('test')</script>",
-        brand="<b>Brand</b>",
-        category="<i>Category</i>",
+        brand=brand,
+        category=category,
         quantity=2,
         expiry_date=date(2027, 12, 1),
     )
 
-    product_row = {
-        "id": product.id,
-        "name": product.name,
-        "brand": product.brand,
-        "category": product.category,
-        "quantity": product.quantity,
-        "expiry_date": product.expiry_date.isoformat(),
-    }
-    with (
-        patch("products.views.fetch_products", return_value=[product_row]),
-        patch("products.views.current_date", return_value=FIXED_TODAY),
-    ):
-        response = make_client().get("/products/")
+    try:
+        with patch(
+            "products.views.current_date",
+            return_value=FIXED_TODAY,
+        ):
+            response = make_client().get(
+                "/products/",
+                {"q": "alert"},
+            )
+    finally:
+        product.delete()
+        brand.delete()
+        category.delete()
 
     html = response.content.decode()
     assert "&lt;script&gt;alert(&#x27;test&#x27;)&lt;/script&gt;" in html

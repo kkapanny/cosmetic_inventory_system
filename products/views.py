@@ -1,29 +1,36 @@
 from datetime import date, timedelta
 
-from django.http import HttpRequest, HttpResponse
-from django.shortcuts import render
+from django.core.paginator import Paginator
+from django.db.models import Q
+from django.http import Http404, HttpRequest, HttpResponse
+from django.shortcuts import get_object_or_404, render
 
 from db.queries import (
     get_attention_count,
     get_brand_statistics,
     get_category_statistics,
     get_inventory_totals,
-    get_product,
     list_expiring_products,
     list_low_stock_products,
-    list_products as fetch_products,
-    list_products_by_category,
-    search_products,
 )
-from models import Product
+from models import Product as LegacyProduct
+from products.models import Category, Product
+
+
+PRODUCTS_PER_PAGE = 6
+PRODUCT_SORTS = {
+    "expiry": ("expiry_date", "name", "pk"),
+    "name": ("name", "pk"),
+    "quantity": ("quantity", "name", "pk"),
+}
 
 
 def current_date() -> date:
     return date.today()
 
 
-def row_to_product(row) -> Product:
-    return Product(
+def row_to_product(row) -> LegacyProduct:
+    return LegacyProduct(
         product_id=row["id"],
         name=row["name"],
         brand=row["brand"],
@@ -46,27 +53,59 @@ def prepare_product_items(rows, today: date) -> list[dict[str, object]]:
     return product_items
 
 
+def prepare_orm_product_items(
+    products,
+    today: date,
+) -> list[dict[str, object]]:
+    return [
+        {
+            "product": product,
+            "needs_attention": product.needs_restock(today),
+        }
+        for product in products
+    ]
+
+
 def products(request: HttpRequest) -> HttpResponse:
     query = request.GET.get("q", "").strip()
     selected_category = request.GET.get("category", "").strip()
+    selected_sort = request.GET.get("sort", "expiry")
+    if selected_sort not in PRODUCT_SORTS:
+        selected_sort = "expiry"
 
+    products_query = Product.objects.select_related(
+        "brand",
+        "category",
+    )
     if query:
-        rows = search_products(query, category=selected_category)
-    elif selected_category:
-        rows = list_products_by_category(selected_category)
-    else:
-        rows = fetch_products()
+        products_query = products_query.filter(
+            Q(name__icontains=query)
+            | Q(brand__name__icontains=query)
+            | Q(category__name__icontains=query)
+        )
+    if selected_category:
+        products_query = products_query.filter(
+            category__name=selected_category,
+        )
 
-    product_items = prepare_product_items(rows, current_date())
-    categories = [
-        row["category"] for row in get_category_statistics()
-    ]
+    products_query = products_query.order_by(
+        *PRODUCT_SORTS[selected_sort]
+    )
+    paginator = Paginator(products_query, PRODUCTS_PER_PAGE)
+    page_obj = paginator.get_page(request.GET.get("page"))
+    product_items = prepare_orm_product_items(
+        page_obj.object_list,
+        current_date(),
+    )
+    categories = Category.objects.values_list("name", flat=True)
     context = {
         "page_title": "Косметические средства",
         "product_items": product_items,
+        "page_obj": page_obj,
         "categories": categories,
         "query": query,
         "selected_category": selected_category,
+        "selected_sort": selected_sort,
     }
     return render(request, "products/list.html", context)
 
@@ -74,8 +113,12 @@ def products(request: HttpRequest) -> HttpResponse:
 def product_detail(
     request: HttpRequest, product_id: int
 ) -> HttpResponse:
-    row = get_product(product_id)
-    if row is None:
+    try:
+        product = get_object_or_404(
+            Product.objects.select_related("brand", "category"),
+            pk=product_id,
+        )
+    except Http404:
         context = {
             "page_title": "Средство не найдено",
             "product_id": product_id,
@@ -87,7 +130,6 @@ def product_detail(
             status=404,
         )
 
-    product = row_to_product(row)
     today = current_date()
     context = {
         "page_title": product.name,
