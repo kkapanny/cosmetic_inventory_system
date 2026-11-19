@@ -3,8 +3,10 @@ from datetime import date
 from unittest.mock import patch
 
 from django.contrib.staticfiles import finders
+from django.db import connection
 from django.template.loader import render_to_string
 from django.test import Client, override_settings
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
 from products.models import Brand, Category, Product
@@ -30,19 +32,53 @@ def test_named_routes() -> None:
 
 
 def test_base_template_loads_shared_navigation() -> None:
-    html = render_to_string("base.html")
+    html = render_to_string(
+        "base.html",
+        {
+            "site_name": "Cosmetic Inventory System",
+            "inventory_products_count": 3,
+        },
+    )
 
     assert "<title>Cosmetic Inventory System</title>" in html
     assert 'href="/"' in html
     assert 'href="/products/"' in html
     assert 'href="/products/attention/"' in html
     assert 'href="/products/statistics/"' in html
+    assert "Средства (3)" in html
     assert "Перейти к содержимому" in html
     assert '<main id="main-content"' in html
     assert 'href="/static/css/style.css"' in html
     assert 'src="/static/js/main.js"' in html
     assert 'src="/static/img/logo.svg"' in html
     assert "data-current-year" in html
+
+
+def test_inventory_context_is_available_on_main_pages() -> None:
+    for path in ("/", "/products/", "/products/statistics/"):
+        response = make_client().get(path)
+        html = response.content.decode()
+
+        assert response.context["site_name"] == (
+            "Cosmetic Inventory System"
+        )
+        assert response.context["inventory_products_count"] == 3
+        assert "Средства (3)" in html
+
+
+def test_main_pages_keep_database_queries_bounded() -> None:
+    expected_queries = {
+        "/": 1,
+        "/products/": 4,
+        "/products/attention/": 2,
+    }
+
+    for path, expected_count in expected_queries.items():
+        with CaptureQueriesContext(connection) as queries:
+            response = make_client().get(path)
+
+        assert response.status_code == 200
+        assert len(queries) == expected_count
 
 
 def test_static_assets_are_discoverable() -> None:

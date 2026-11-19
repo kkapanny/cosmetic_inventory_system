@@ -72,6 +72,24 @@ def test_related_objects_select_related_and_values_queries() -> None:
     }
 
 
+def test_custom_product_queryset_methods_can_be_chained() -> None:
+    products = (
+        Product.objects.matching("Т")
+        .in_category("Глаза")
+        .with_inventory_relations()
+    )
+    product = products.get()
+
+    assert product.pk == 2
+    assert set(product._state.fields_cache) == {"brand", "category"}
+    assert set(
+        Product.objects.needing_attention(
+            date(2026, 12, 1),
+        ).values_list("pk", flat=True)
+    ) == {1, 3}
+    assert Product.objects.all().count() == 3
+
+
 def test_aggregate_and_annotate_queries() -> None:
     summary = Product.objects.aggregate(
         products_count=Count("pk"),

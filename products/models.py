@@ -43,6 +43,36 @@ class Category(models.Model):
         verbose_name_plural = "Категории"
 
 
+class ProductQuerySet(models.QuerySet):
+    def with_inventory_relations(self):
+        return self.select_related("brand", "category")
+
+    def matching(self, query: str):
+        if not query:
+            return self
+        # shortcut: SQLite не складывает регистр кириллицы без collation.
+        return self.filter(
+            models.Q(name__icontains=query)
+            | models.Q(brand__name__icontains=query)
+            | models.Q(category__name__icontains=query)
+        )
+
+    def in_category(self, category: str):
+        if not category:
+            return self
+        return self.filter(category__name=category)
+
+    def needing_attention(self, deadline: date):
+        return self.filter(
+            models.Q(low_stock=True)
+            | models.Q(expiry_date__lte=deadline)
+        )
+
+
+class ProductManager(models.Manager.from_queryset(ProductQuerySet)):
+    pass
+
+
 class Product(models.Model):
     name = models.CharField(
         max_length=200,
@@ -83,6 +113,8 @@ class Product(models.Model):
         editable=False,
         verbose_name="URL-идентификатор",
     )
+
+    objects = ProductManager()
 
     @staticmethod
     def validate_quantity(quantity: int) -> bool:

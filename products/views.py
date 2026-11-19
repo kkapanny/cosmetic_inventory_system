@@ -1,7 +1,7 @@
 from datetime import date, timedelta
 
 from django.core.paginator import Paginator
-from django.db.models import Count, F, Q, Sum
+from django.db.models import Count, F, Sum
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, render
 
@@ -40,23 +40,11 @@ def products(request: HttpRequest) -> HttpResponse:
     if selected_sort not in PRODUCT_SORTS:
         selected_sort = "expiry"
     # сортировка применяется к ORM запросу
-    products_query = Product.objects.select_related(
-        "brand",
-        "category",
-    )
-    if query:
-        products_query = products_query.filter(
-            Q(name__icontains=query)
-            | Q(brand__name__icontains=query)
-            | Q(category__name__icontains=query)
-        )
-    if selected_category:
-        products_query = products_query.filter(
-            category__name=selected_category,
-        )
-
-    products_query = products_query.order_by(
-        *PRODUCT_SORTS[selected_sort]
+    products_query = (
+        Product.objects.with_inventory_relations()
+        .matching(query)
+        .in_category(selected_category)
+        .order_by(*PRODUCT_SORTS[selected_sort])
     )
     paginator = Paginator(products_query, PRODUCTS_PER_PAGE)
     page_obj = paginator.get_page(request.GET.get("page"))
@@ -82,7 +70,7 @@ def product_detail(
 ) -> HttpResponse:
     try:
         product = get_object_or_404(
-            Product.objects.select_related("brand", "category"),
+            Product.objects.with_inventory_relations(),
             slug=slug,
         )
     except Http404:
@@ -111,15 +99,10 @@ def product_detail(
 def attention(request: HttpRequest) -> HttpResponse:
     today = current_date()
     deadline = today + timedelta(days=30)
-    products_query = Product.objects.select_related(
-        "brand",
-        "category",
-    ).filter(
-        Q(quantity__lte=1) | Q(expiry_date__lte=deadline)
-    ).order_by(
-        "expiry_date",
-        "name",
-        "pk",
+    products_query = (
+        Product.objects.with_inventory_relations()
+        .needing_attention(deadline)
+        .order_by("expiry_date", "name", "pk")
     )
     product_items = prepare_product_items(products_query, today)
     context = {
@@ -138,9 +121,7 @@ def statistics(request: HttpRequest) -> HttpResponse:
         brands_count=Count("brand", distinct=True),
         categories_count=Count("category", distinct=True),
     )
-    attention_count = Product.objects.filter(
-        Q(quantity__lte=1) | Q(expiry_date__lte=deadline)
-    ).count()
+    attention_count = Product.objects.needing_attention(deadline).count()
     category_statistics = (
         Category.objects.annotate(
             products_count=Count("products"),
