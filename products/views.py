@@ -39,7 +39,7 @@ def products(request: HttpRequest) -> HttpResponse:
     selected_sort = request.GET.get("sort", "expiry")
     if selected_sort not in PRODUCT_SORTS:
         selected_sort = "expiry"
-
+    # сортировка применяется к ORM запросу
     products_query = Product.objects.select_related(
         "brand",
         "category",
