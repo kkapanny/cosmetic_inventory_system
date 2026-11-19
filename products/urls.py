@@ -10,7 +10,7 @@ urlpatterns = [
     path("attention/", views.attention, name="attention"),
     path("statistics/", views.statistics, name="statistics"),
     path(
-        "<int:product_id>/",
+        "<slug:slug>/",
         views.product_detail,
         name="detail",
     ),

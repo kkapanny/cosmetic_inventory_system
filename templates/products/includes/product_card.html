@@ -1,5 +1,5 @@
 <a
-    href="{% url 'products:detail' product.id %}"
+    href="{{ product.get_absolute_url }}"
     class="list-group-item list-group-item-action p-3"
 >
     <div

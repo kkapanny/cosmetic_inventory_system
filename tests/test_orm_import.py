@@ -153,7 +153,9 @@ def test_import_preserves_ids_relations_and_is_repeatable(
                 brand_id,
                 category_id,
                 quantity,
-                expiry_date
+                expiry_date,
+                slug,
+                low_stock
             FROM products_product
             """
         ).fetchone()
@@ -167,6 +169,8 @@ def test_import_preserves_ids_relations_and_is_repeatable(
             1,
             2,
             "2027-05-10",
+            "krem-7",
+            0,
         )
         assert connection.execute(
             "SELECT COUNT(*) FROM products_product"

@@ -146,3 +146,46 @@ def test_create_update_and_delete_queries() -> None:
         Product.objects.filter(pk=product.pk).delete()
         brand.delete()
         category.delete()
+
+
+def test_slug_url_and_generated_stock_flag() -> None:
+    product = Product.objects.get(pk=2)
+    original_quantity = product.quantity
+
+    try:
+        assert product.slug == "tush-dlia-resnits-2"
+        assert product.get_absolute_url() == (
+            "/products/tush-dlia-resnits-2/"
+        )
+        assert product.low_stock is False
+
+        product.quantity = 1
+        product.save(update_fields=["quantity"])
+        product.refresh_from_db()
+
+        assert product.low_stock is True
+    finally:
+        Product.objects.filter(pk=product.pk).update(
+            quantity=original_quantity,
+        )
+
+
+def test_new_product_gets_stable_transliterated_slug() -> None:
+    product = Product.objects.create(
+        name="Крем для рук",
+        brand=Brand.objects.get(name="L'Oreal"),
+        category=Category.objects.get(name="Лицо"),
+        quantity=1,
+        expiry_date=date(2028, 1, 1),
+    )
+
+    try:
+        assert product.slug == f"krem-dlia-ruk-{product.pk}"
+        original_slug = product.slug
+
+        product.name = "Крем для тела"
+        product.save()
+
+        assert product.slug == original_slug
+    finally:
+        product.delete()

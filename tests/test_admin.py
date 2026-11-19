@@ -44,6 +44,7 @@ def test_product_admin_configuration() -> None:
         "category__name",
     )
     assert product_admin.list_filter == (
+        "low_stock",
         "brand",
         "category",
         "expiry_date",
@@ -51,6 +52,8 @@ def test_product_admin_configuration() -> None:
     assert product_admin.list_editable == ("quantity",)
     assert product_admin.list_select_related == ("brand", "category")
     assert product_admin.list_per_page == 25
+    assert product_admin.view_on_site is True
+    assert "low_stock" in product_admin.readonly_fields
 
 
 def test_related_products_are_available_as_inlines() -> None:

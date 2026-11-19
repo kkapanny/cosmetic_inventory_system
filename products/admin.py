@@ -46,18 +46,20 @@ class ProductAdmin(admin.ModelAdmin):
         "brand",
         "category",
         "quantity",
+        "low_stock",
         "expiry_date",
         "stock_state",
     )
     list_display_links = ("name",)
     list_editable = ("quantity",)
     search_fields = ("name", "brand__name", "category__name")
-    list_filter = ("brand", "category", "expiry_date")
+    list_filter = ("low_stock", "brand", "category", "expiry_date")
     ordering = ("expiry_date", "name")
     list_per_page = 25
     list_select_related = ("brand", "category")
-    readonly_fields = ("stock_state",)
+    readonly_fields = ("slug", "low_stock", "stock_state")
     actions = ("restock_selected",)
+    view_on_site = True
 
     @admin.display(description="Состояние запасов", ordering="quantity")
     def stock_state(self, product: Product) -> str:

@@ -23,7 +23,10 @@ def test_named_routes() -> None:
     assert reverse("products:list") == "/products/"
     assert reverse("products:attention") == "/products/attention/"
     assert reverse("products:statistics") == "/products/statistics/"
-    assert reverse("products:detail", args=[1]) == "/products/1/"
+    assert reverse(
+        "products:detail",
+        args=["tonalnyi-krem-1"],
+    ) == "/products/tonalnyi-krem-1/"
 
 
 def test_base_template_loads_shared_navigation() -> None:
@@ -80,9 +83,9 @@ def test_products_list_uses_orm_data() -> None:
     assert "Всего позиций: 3" in html
     assert "Требует внимания" in html
     assert "В порядке" in html
-    assert 'href="/products/1/"' in html
-    assert 'href="/products/2/"' in html
-    assert 'href="/products/3/"' in html
+    assert 'href="/products/tonalnyi-krem-1/"' in html
+    assert 'href="/products/tush-dlia-resnits-2/"' in html
+    assert 'href="/products/shampun-3/"' in html
 
 
 def test_products_list_handles_empty_result() -> None:
@@ -170,18 +173,16 @@ def test_products_handle_invalid_sort_and_page_parameters() -> None:
 def test_products_paginate_and_preserve_query_parameters() -> None:
     brand = Brand.objects.get(name="L'Oreal")
     category = Category.objects.get(name="Лицо")
-    added_products = Product.objects.bulk_create(
-        [
-            Product(
-                name=f"Тестовое средство {number}",
-                brand=brand,
-                category=category,
-                quantity=number,
-                expiry_date=date(2028, 1, number + 1),
-            )
-            for number in range(7)
-        ]
-    )
+    added_products = [
+        Product.objects.create(
+            name=f"Тестовое средство {number}",
+            brand=brand,
+            category=category,
+            quantity=number,
+            expiry_date=date(2028, 1, number + 1),
+        )
+        for number in range(7)
+    ]
 
     try:
         response = make_client().get(
@@ -210,7 +211,7 @@ def test_products_paginate_and_preserve_query_parameters() -> None:
 
 def test_product_detail_uses_orm_data() -> None:
     with patch("products.views.current_date", return_value=FIXED_TODAY):
-        response = make_client().get("/products/1/")
+        response = make_client().get("/products/tonalnyi-krem-1/")
 
     html = response.content.decode()
 
@@ -229,7 +230,7 @@ def test_product_detail_uses_orm_data() -> None:
 
 def test_product_detail_displays_normal_status() -> None:
     with patch("products.views.current_date", return_value=FIXED_TODAY):
-        response = make_client().get("/products/2/")
+        response = make_client().get("/products/tush-dlia-resnits-2/")
 
     html = response.content.decode()
     assert response.status_code == 200
@@ -306,14 +307,14 @@ def test_statistics_page_uses_orm_aggregates() -> None:
 
 
 def test_unknown_product_returns_404() -> None:
-    response = make_client().get("/products/999/")
+    response = make_client().get("/products/unknown-product/")
     html = response.content.decode()
 
     assert response.status_code == 404
     assert response.templates[0].name == "products/not_found.html"
-    assert response.context["product_id"] == 999
+    assert response.context["product_slug"] == "unknown-product"
     assert "Средство не найдено" in html
-    assert "999" in html
+    assert "unknown-product" in html
     assert "К списку средств" in html
 
 

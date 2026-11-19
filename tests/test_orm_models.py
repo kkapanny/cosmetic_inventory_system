@@ -41,6 +41,11 @@ def test_inventory_models_have_expected_fields() -> None:
         Product._meta.get_field("expiry_date"),
         models.DateField,
     )
+    assert isinstance(
+        Product._meta.get_field("low_stock"),
+        models.GeneratedField,
+    )
+    assert Product._meta.get_field("slug").unique is True
 
 
 def test_product_foreign_keys_protect_related_records() -> None:

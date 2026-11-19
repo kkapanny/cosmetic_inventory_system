@@ -78,17 +78,17 @@ def products(request: HttpRequest) -> HttpResponse:
 
 
 def product_detail(
-    request: HttpRequest, product_id: int
+    request: HttpRequest, slug: str
 ) -> HttpResponse:
     try:
         product = get_object_or_404(
             Product.objects.select_related("brand", "category"),
-            pk=product_id,
+            slug=slug,
         )
     except Http404:
         context = {
             "page_title": "Средство не найдено",
-            "product_id": product_id,
+            "product_slug": slug,
         }
         return render(
             request,
