@@ -16,70 +16,58 @@
 
         <div class="card mb-4">
             <div class="card-body">
-                <form method="get" class="row g-3 align-items-end">
+                <form method="get" class="row g-3 align-items-start">
+                    {% if filter_form.errors %}
+                        <div class="col-12">
+                            <div class="alert alert-danger mb-0" role="alert">
+                                <strong>Исправьте параметры фильтрации.</strong>
+                                Некорректные значения не были применены.
+                            </div>
+                        </div>
+                    {% endif %}
                     <div class="col-lg-4">
-                        <label for="product-search" class="form-label">
-                            Поиск
-                        </label>
-                        <input
-                            id="product-search"
-                            class="form-control"
-                            type="search"
-                            name="q"
-                            value="{{ query }}"
-                            placeholder="Название, бренд или категория"
+                        <label
+                            for="{{ filter_form.q.id_for_label }}"
+                            class="form-label"
                         >
+                            {{ filter_form.q.label }}
+                        </label>
+                        {{ filter_form.q }}
+                        {% for error in filter_form.q.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ error }}
+                            </div>
+                        {% endfor %}
                     </div>
                     <div class="col-sm-6 col-lg-3">
-                        <label for="category-filter" class="form-label">
-                            Категория
-                        </label>
-                        <select
-                            id="category-filter"
-                            class="form-select"
-                            name="category"
+                        <label
+                            for="{{ filter_form.category.id_for_label }}"
+                            class="form-label"
                         >
-                            <option value="">Все категории</option>
-                            {% for category in categories %}
-                                <option
-                                    value="{{ category }}"
-                                    {% if category == selected_category %}selected{% endif %}
-                                >
-                                    {{ category }}
-                                </option>
-                            {% endfor %}
-                        </select>
+                            {{ filter_form.category.label }}
+                        </label>
+                        {{ filter_form.category }}
+                        {% for error in filter_form.category.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ error }}
+                            </div>
+                        {% endfor %}
                     </div>
                     <div class="col-sm-6 col-lg-3">
-                        <label for="product-sort" class="form-label">
-                            Сортировка
-                        </label>
-                        <select
-                            id="product-sort"
-                            class="form-select"
-                            name="sort"
+                        <label
+                            for="{{ filter_form.sort.id_for_label }}"
+                            class="form-label"
                         >
-                            <option
-                                value="expiry"
-                                {% if selected_sort == "expiry" %}selected{% endif %}
-                            >
-                                По сроку годности
-                            </option>
-                            <option
-                                value="name"
-                                {% if selected_sort == "name" %}selected{% endif %}
-                            >
-                                По названию
-                            </option>
-                            <option
-                                value="quantity"
-                                {% if selected_sort == "quantity" %}selected{% endif %}
-                            >
-                                По количеству
-                            </option>
-                        </select>
+                            {{ filter_form.sort.label }}
+                        </label>
+                        {{ filter_form.sort }}
+                        {% for error in filter_form.sort.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ error }}
+                            </div>
+                        {% endfor %}
                     </div>
-                    <div class="col-lg-2 d-grid">
+                    <div class="col-lg-2 d-grid mt-lg-4">
                         <button class="btn btn-primary" type="submit">
                             Найти
                         </button>

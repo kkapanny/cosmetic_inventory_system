@@ -113,6 +113,7 @@ def test_products_list_uses_orm_data() -> None:
     }
     assert len(response.context["product_items"]) == 3
     assert response.context["page_obj"].paginator.count == 3
+    assert response.context["filter_form"].is_bound is False
     assert "Тональный крем" in html
     assert "Тушь для ресниц" in html
     assert "Шампунь" in html
@@ -204,6 +205,8 @@ def test_products_handle_invalid_sort_and_page_parameters() -> None:
     assert response.status_code == 200
     assert response.context["selected_sort"] == "expiry"
     assert response.context["page_obj"].number == 1
+    assert "sort" in response.context["filter_form"].errors
+    assert "Исправьте параметры фильтрации" in response.content.decode()
 
 
 def test_products_paginate_and_preserve_query_parameters() -> None:

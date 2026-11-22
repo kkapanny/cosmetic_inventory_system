@@ -5,6 +5,7 @@ from django.db.models import Count, F, Sum
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, render
 
+from products.forms import ProductFilterForm
 from products.models import Brand, Category, Product
 
 
@@ -34,11 +35,15 @@ def prepare_product_items(
 
 
 def products(request: HttpRequest) -> HttpResponse:
-    query = request.GET.get("q", "").strip()
-    selected_category = request.GET.get("category", "").strip()
-    selected_sort = request.GET.get("sort", "expiry")
-    if selected_sort not in PRODUCT_SORTS:
-        selected_sort = "expiry"
+    filter_form = ProductFilterForm(request.GET or None)
+    query = ""
+    selected_category = ""
+    selected_sort = "expiry"
+    if filter_form.is_valid():
+        query = filter_form.cleaned_data["q"]
+        category = filter_form.cleaned_data["category"]
+        selected_category = category.name if category else ""
+        selected_sort = filter_form.cleaned_data["sort"]
     # сортировка применяется к ORM запросу
     products_query = (
         Product.objects.with_inventory_relations()
@@ -52,12 +57,11 @@ def products(request: HttpRequest) -> HttpResponse:
         page_obj.object_list,
         current_date(),
     )
-    categories = Category.objects.values_list("name", flat=True)
     context = {
         "page_title": "Косметические средства",
         "product_items": product_items,
         "page_obj": page_obj,
-        "categories": categories,
+        "filter_form": filter_form,
         "query": query,
         "selected_category": selected_category,
         "selected_sort": selected_sort,
