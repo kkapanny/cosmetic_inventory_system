@@ -1,7 +1,11 @@
 import inspect
+import tempfile
 from datetime import date, timedelta
+from io import BytesIO
+from pathlib import Path
 from unittest.mock import patch
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.contrib.staticfiles import finders
 from django.db import connection
 from django.template.loader import render_to_string
@@ -9,6 +13,7 @@ from django.test import Client, override_settings
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils.timezone import localdate
+from PIL import Image
 
 from products.models import Brand, Category, Product
 
@@ -19,6 +24,16 @@ FIXED_TODAY = date(2026, 11, 1)
 # создание тестового HTTP-клиента
 def make_client() -> Client:
     return Client(HTTP_HOST="localhost")
+
+
+def make_product_image() -> SimpleUploadedFile:
+    image_bytes = BytesIO()
+    Image.new("RGB", (2, 2), "white").save(image_bytes, format="PNG")
+    return SimpleUploadedFile(
+        "product.png",
+        image_bytes.getvalue(),
+        content_type="image/png",
+    )
 
 
 def test_named_routes() -> None:
@@ -52,6 +67,35 @@ def test_product_create_page_displays_modelform() -> None:
     assert 'name="csrfmiddlewaretoken"' in html
     assert 'name="expiry_date"' in html
     assert 'type="date"' in html
+    assert 'enctype="multipart/form-data"' in html
+    assert 'name="image"' in html
+
+
+def test_product_create_saves_uploaded_image() -> None:
+    brand = Brand.objects.get(name="Maybelline")
+    category = Category.objects.get(name="Глаза")
+
+    with tempfile.TemporaryDirectory() as media_root:
+        with override_settings(MEDIA_ROOT=media_root):
+            response = make_client().post(
+                reverse("products:create"),
+                {
+                    "name": "Крем с изображением",
+                    "brand": brand.pk,
+                    "category": category.pk,
+                    "quantity": 2,
+                    "expiry_date": localdate() + timedelta(days=180),
+                    "image": make_product_image(),
+                },
+            )
+            product = Product.objects.get(name="Крем с изображением")
+
+            try:
+                assert response.status_code == 302
+                assert product.image.name.startswith("products/")
+                assert Path(media_root, product.image.name).is_file()
+            finally:
+                product.delete()
 
 
 def test_product_create_saves_valid_post_and_redirects() -> None:
@@ -510,6 +554,29 @@ def test_product_detail_displays_normal_status() -> None:
     assert response.context["quantity_status"] == "В наличии"
     assert "В порядке" in html
     assert "15.03.2027" in html
+
+
+def test_product_detail_displays_uploaded_image() -> None:
+    with tempfile.TemporaryDirectory() as media_root:
+        with override_settings(MEDIA_ROOT=media_root):
+            product = Product.objects.create(
+                name="Изображаемый крем",
+                brand=Brand.objects.get(name="Maybelline"),
+                category=Category.objects.get(name="Лицо"),
+                quantity=2,
+                expiry_date=localdate() + timedelta(days=90),
+                image=make_product_image(),
+            )
+
+            try:
+                response = make_client().get(product.get_absolute_url())
+                html = response.content.decode()
+
+                assert response.status_code == 200
+                assert product.image.url in html
+                assert 'alt="Изображаемый крем"' in html
+            finally:
+                product.delete()
 
 
 def test_templates_escape_product_data() -> None:

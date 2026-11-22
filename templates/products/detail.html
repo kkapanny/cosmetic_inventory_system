@@ -25,6 +25,14 @@
                             {% endif %}
                         </header>
 
+                        {% if product.image %}
+                            <img
+                                src="{{ product.image.url }}"
+                                alt="{{ product.name }}"
+                                class="img-fluid rounded mb-4"
+                            >
+                        {% endif %}
+
                         <dl class="row gy-3 mb-4">
                             <dt class="col-sm-4 text-secondary">ID</dt>
                             <dd class="col-sm-8 mb-0">{{ product.id }}</dd>

@@ -13,7 +13,12 @@
                     </p>
                 </header>
 
-                <form method="post" class="card" novalidate>
+                <form
+                    method="post"
+                    enctype="multipart/form-data"
+                    class="card"
+                    novalidate
+                >
                     {% csrf_token %}
                     <div class="card-body p-4">
                         {% if form.errors %}

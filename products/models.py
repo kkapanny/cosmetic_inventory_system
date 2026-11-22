@@ -107,6 +107,11 @@ class Product(models.Model):
     expiry_date = models.DateField(
         verbose_name="Срок годности",
     )
+    image = models.ImageField(
+        upload_to="products/",
+        blank=True,
+        verbose_name="Изображение",
+    )
     slug = models.SlugField(
         max_length=220,
         unique=True,

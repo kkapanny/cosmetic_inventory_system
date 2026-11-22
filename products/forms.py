@@ -10,6 +10,12 @@ PRODUCT_SORT_CHOICES = (
     ("name", "По названию"),
     ("quantity", "По количеству"),
 )
+MAX_IMAGE_SIZE = 5 * 1024 * 1024
+ALLOWED_IMAGE_CONTENT_TYPES = {
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+}
 
 
 class ProductFilterForm(forms.Form):
@@ -52,6 +58,7 @@ class ProductForm(forms.ModelForm):
             "category",
             "quantity",
             "expiry_date",
+            "image",
         )
         widgets = {
             "name": forms.TextInput(
@@ -69,10 +76,17 @@ class ProductForm(forms.ModelForm):
                 format="%Y-%m-%d",
                 attrs={"class": "form-control", "type": "date"},
             ),
+            "image": forms.ClearableFileInput(
+                attrs={
+                    "class": "form-control",
+                    "accept": "image/jpeg,image/png,image/webp",
+                }
+            ),
         }
         help_texts = {
             "quantity": "Укажите количество единиц в наличии.",
             "expiry_date": "Дата должна быть сегодняшней или будущей.",
+            "image": "JPEG, PNG или WebP размером не более 5 МБ.",
         }
 
     def clean_expiry_date(self):
@@ -82,3 +96,17 @@ class ProductForm(forms.ModelForm):
                 "Срок годности не может быть в прошлом."
             )
         return expiry_date
+
+    def clean_image(self):
+        image = self.cleaned_data["image"]
+        if not image or not hasattr(image, "content_type"):
+            return image
+        if image.content_type not in ALLOWED_IMAGE_CONTENT_TYPES:
+            raise ValidationError(
+                "Допустимы изображения JPEG, PNG и WebP."
+            )
+        if image.size > MAX_IMAGE_SIZE:
+            raise ValidationError(
+                "Размер изображения не должен превышать 5 МБ."
+            )
+        return image

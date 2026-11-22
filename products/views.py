@@ -73,7 +73,10 @@ def products(request: HttpRequest) -> HttpResponse:
 
 @require_http_methods(["GET", "POST"])
 def product_create(request: HttpRequest) -> HttpResponse:
-    form = ProductForm(request.POST if request.method == "POST" else None)
+    form = ProductForm(
+        request.POST if request.method == "POST" else None,
+        request.FILES if request.method == "POST" else None,
+    )
     if request.method == "POST" and form.is_valid():
         product = form.save()
         return redirect(product)
@@ -93,6 +96,7 @@ def product_update(request: HttpRequest, slug: str) -> HttpResponse:
     product = get_object_or_404(Product, slug=slug)
     form = ProductForm(
         request.POST if request.method == "POST" else None,
+        request.FILES if request.method == "POST" else None,
         instance=product,
     )
     if request.method == "POST" and form.is_valid():
