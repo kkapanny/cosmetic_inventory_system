@@ -66,7 +66,8 @@ class ProductForm(forms.ModelForm):
                 attrs={"class": "form-control", "min": 0}
             ),
             "expiry_date": forms.DateInput(
-                attrs={"class": "form-control", "type": "date"}
+                format="%Y-%m-%d",
+                attrs={"class": "form-control", "type": "date"},
             ),
         }
         help_texts = {

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+    <section class="py-4" aria-labelledby="delete-product-title">
+        <div class="row justify-content-center">
+            <div class="col-lg-7 col-xl-6">
+                <article class="card border-danger">
+                    <div class="card-body p-4">
+                        <h1 id="delete-product-title" class="h3">
+                            Удалить средство
+                        </h1>
+                        <p class="lead">
+                            Вы уверены, что хотите удалить
+                            <strong>«{{ product.name }}»</strong>?
+                        </p>
+                        <dl class="row mb-4">
+                            <dt class="col-sm-4 text-secondary">Бренд</dt>
+                            <dd class="col-sm-8">{{ product.brand }}</dd>
+                            <dt class="col-sm-4 text-secondary">Категория</dt>
+                            <dd class="col-sm-8">{{ product.category }}</dd>
+                            <dt class="col-sm-4 text-secondary">Количество</dt>
+                            <dd class="col-sm-8">{{ product.quantity }} шт.</dd>
+                        </dl>
+                        <p class="text-danger">
+                            Это действие нельзя отменить.
+                        </p>
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="d-flex flex-wrap gap-2">
+                                <button class="btn btn-danger" type="submit">
+                                    Удалить средство
+                                </button>
+                                <a
+                                    href="{{ product.get_absolute_url }}"
+                                    class="btn btn-outline-secondary"
+                                >
+                                    Отмена
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
+{% endblock %}

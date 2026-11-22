@@ -28,6 +28,14 @@ def test_named_routes() -> None:
     assert reverse("products:statistics") == "/products/statistics/"
     assert reverse("products:create") == "/products/create/"
     assert reverse(
+        "products:update",
+        args=["tonalnyi-krem-1"],
+    ) == "/products/tonalnyi-krem-1/edit/"
+    assert reverse(
+        "products:delete",
+        args=["tonalnyi-krem-1"],
+    ) == "/products/tonalnyi-krem-1/delete/"
+    assert reverse(
         "products:detail",
         args=["tonalnyi-krem-1"],
     ) == "/products/tonalnyi-krem-1/"
@@ -115,6 +123,143 @@ def test_product_create_escapes_bound_values() -> None:
     assert response.status_code == 200
     assert "&lt;script&gt;alert(&#x27;test&#x27;)&lt;/script&gt;" in html
     assert "<script>alert('test')</script>" not in html
+
+
+def test_product_update_page_uses_existing_instance() -> None:
+    product = Product.objects.get(name="Тушь для ресниц")
+    response = make_client().get(
+        reverse("products:update", args=[product.slug])
+    )
+    html = response.content.decode()
+
+    assert response.status_code == 200
+    assert response.templates[0].name == "products/form.html"
+    assert response.context["form"].instance == product
+    assert "Редактировать средство" in html
+    assert "Тушь для ресниц" in html
+    assert 'value="2027-03-15"' in html
+
+
+def test_product_update_changes_existing_product() -> None:
+    product = Product.objects.create(
+        name="Тестовая пудра",
+        brand=Brand.objects.get(name="Maybelline"),
+        category=Category.objects.get(name="Лицо"),
+        quantity=1,
+        expiry_date=localdate() + timedelta(days=90),
+    )
+    products_before = Product.objects.count()
+    response = make_client().post(
+        reverse("products:update", args=[product.slug]),
+        {
+            "name": "Обновлённая пудра",
+            "brand": product.brand_id,
+            "category": product.category_id,
+            "quantity": 4,
+            "expiry_date": localdate() + timedelta(days=180),
+        },
+    )
+
+    try:
+        product.refresh_from_db()
+        assert response.status_code == 302
+        assert response.url == product.get_absolute_url()
+        assert Product.objects.count() == products_before
+        assert product.name == "Обновлённая пудра"
+        assert product.quantity == 4
+    finally:
+        product.delete()
+
+
+def test_product_update_does_not_save_invalid_changes() -> None:
+    product = Product.objects.create(
+        name="Тестовая сыворотка",
+        brand=Brand.objects.get(name="L'Oreal"),
+        category=Category.objects.get(name="Лицо"),
+        quantity=2,
+        expiry_date=localdate() + timedelta(days=90),
+    )
+    response = make_client().post(
+        reverse("products:update", args=[product.slug]),
+        {
+            "name": "Испорченная сыворотка",
+            "brand": product.brand_id,
+            "category": product.category_id,
+            "quantity": 2,
+            "expiry_date": localdate() - timedelta(days=1),
+        },
+    )
+
+    try:
+        product.refresh_from_db()
+        assert response.status_code == 200
+        assert product.name == "Тестовая сыворотка"
+        assert "Срок годности не может быть в прошлом" in (
+            response.content.decode()
+        )
+    finally:
+        product.delete()
+
+
+def test_product_delete_get_only_displays_confirmation() -> None:
+    product = Product.objects.get(name="Шампунь")
+    response = make_client().get(
+        reverse("products:delete", args=[product.slug])
+    )
+    html = response.content.decode()
+
+    assert response.status_code == 200
+    assert response.templates[0].name == "products/confirm_delete.html"
+    assert Product.objects.filter(pk=product.pk).exists()
+    assert "Удалить средство" in html
+    assert 'name="csrfmiddlewaretoken"' in html
+
+
+def test_product_delete_post_removes_product() -> None:
+    product = Product.objects.create(
+        name="Средство для удаления",
+        brand=Brand.objects.get(name="Estel"),
+        category=Category.objects.get(name="Волосы"),
+        quantity=0,
+        expiry_date=localdate() + timedelta(days=30),
+    )
+    product_id = product.pk
+    response = make_client().post(
+        reverse("products:delete", args=[product.slug])
+    )
+
+    assert response.status_code == 302
+    assert response.url == reverse("products:list")
+    assert not Product.objects.filter(pk=product_id).exists()
+
+
+def test_product_delete_rejects_post_without_csrf_token() -> None:
+    product = Product.objects.create(
+        name="Защищённое средство",
+        brand=Brand.objects.get(name="Estel"),
+        category=Category.objects.get(name="Волосы"),
+        quantity=1,
+        expiry_date=localdate() + timedelta(days=30),
+    )
+    response = Client(
+        HTTP_HOST="localhost",
+        enforce_csrf_checks=True,
+    ).post(reverse("products:delete", args=[product.slug]))
+
+    try:
+        assert response.status_code == 403
+        assert Product.objects.filter(pk=product.pk).exists()
+    finally:
+        product.delete()
+
+
+def test_unknown_product_update_and_delete_return_404() -> None:
+    for route_name in ("products:update", "products:delete"):
+        response = make_client().get(
+            reverse(route_name, args=["unknown-product"])
+        )
+
+        assert response.status_code == 404
 
 
 def test_base_template_loads_shared_navigation() -> None:
@@ -351,6 +496,8 @@ def test_product_detail_uses_orm_data() -> None:
     assert "Заканчивается, стоит добавить в список покупок" in html
     assert "01.12.2026" in html
     assert 'href="/products/"' in html
+    assert 'href="/products/tonalnyi-krem-1/edit/"' in html
+    assert 'href="/products/tonalnyi-krem-1/delete/"' in html
 
 
 def test_product_detail_displays_normal_status() -> None:

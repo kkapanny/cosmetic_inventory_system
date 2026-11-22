@@ -56,12 +56,26 @@
                             </dd>
                         </dl>
 
-                        <a
-                            href="{% url 'products:list' %}"
-                            class="btn btn-outline-secondary"
-                        >
-                            К списку средств
-                        </a>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a
+                                href="{% url 'products:update' product.slug %}"
+                                class="btn btn-primary"
+                            >
+                                Редактировать
+                            </a>
+                            <a
+                                href="{% url 'products:delete' product.slug %}"
+                                class="btn btn-outline-danger"
+                            >
+                                Удалить
+                            </a>
+                            <a
+                                href="{% url 'products:list' %}"
+                                class="btn btn-outline-secondary"
+                            >
+                                К списку средств
+                            </a>
+                        </div>
                     </div>
                 </article>
             </div>

@@ -9,7 +9,7 @@
                 <header class="mb-4">
                     <h1 id="product-form-title">{{ page_title }}</h1>
                     <p class="lead mb-0">
-                        Заполните данные косметического средства.
+                        {{ form_description }}
                     </p>
                 </header>
 
@@ -71,7 +71,7 @@
                                 {{ submit_label }}
                             </button>
                             <a
-                                href="{% url 'products:list' %}"
+                                href="{{ cancel_url }}"
                                 class="btn btn-outline-secondary"
                             >
                                 Отмена

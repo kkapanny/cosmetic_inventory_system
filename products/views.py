@@ -4,6 +4,7 @@ from django.core.paginator import Paginator
 from django.db.models import Count, F, Sum
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 
 from products.forms import ProductFilterForm, ProductForm
@@ -79,10 +80,50 @@ def product_create(request: HttpRequest) -> HttpResponse:
 
     context = {
         "page_title": "Добавить средство",
+        "form_description": "Заполните данные косметического средства.",
         "form": form,
         "submit_label": "Сохранить средство",
+        "cancel_url": reverse("products:list"),
     }
     return render(request, "products/form.html", context)
+
+
+@require_http_methods(["GET", "POST"])
+def product_update(request: HttpRequest, slug: str) -> HttpResponse:
+    product = get_object_or_404(Product, slug=slug)
+    form = ProductForm(
+        request.POST if request.method == "POST" else None,
+        instance=product,
+    )
+    if request.method == "POST" and form.is_valid():
+        product = form.save()
+        return redirect(product)
+
+    context = {
+        "page_title": "Редактировать средство",
+        "form_description": f"Измените данные средства «{product.name}».",
+        "form": form,
+        "submit_label": "Сохранить изменения",
+        "cancel_url": product.get_absolute_url(),
+    }
+    return render(request, "products/form.html", context)
+
+
+@require_http_methods(["GET", "POST"])
+def product_delete(request: HttpRequest, slug: str) -> HttpResponse:
+    product = get_object_or_404(
+        Product.objects.with_inventory_relations(),
+        slug=slug,
+    )
+    if request.method == "POST":
+        product.delete()
+        return redirect("products:list")
+
+    context = {
+        "page_title": "Удалить средство",
+        "product": product,
+    }
+    return render(request, "products/confirm_delete.html", context)
 
 
 def product_detail(
