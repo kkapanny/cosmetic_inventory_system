@@ -23,9 +23,9 @@
             </li>
             <li class="nav-item">
                 <a
-                    class="nav-link px-2{% if request.resolver_match.url_name == 'list' or request.resolver_match.url_name == 'detail' %} active{% endif %}"
+                    class="nav-link px-2{% if request.resolver_match.url_name == 'list' or request.resolver_match.url_name == 'detail' or request.resolver_match.url_name == 'create' %} active{% endif %}"
                     href="{% url 'products:list' %}"
-                    {% if request.resolver_match.url_name == 'list' or request.resolver_match.url_name == 'detail' %}aria-current="page"{% endif %}
+                    {% if request.resolver_match.url_name == 'list' or request.resolver_match.url_name == 'detail' or request.resolver_match.url_name == 'create' %}aria-current="page"{% endif %}
                 >
                     Средства ({{ inventory_products_count }})
                 </a>

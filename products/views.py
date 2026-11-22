@@ -3,9 +3,10 @@ from datetime import date, timedelta
 from django.core.paginator import Paginator
 from django.db.models import Count, F, Sum
 from django.http import Http404, HttpRequest, HttpResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_http_methods
 
-from products.forms import ProductFilterForm
+from products.forms import ProductFilterForm, ProductForm
 from products.models import Brand, Category, Product
 
 
@@ -67,6 +68,21 @@ def products(request: HttpRequest) -> HttpResponse:
         "selected_sort": selected_sort,
     }
     return render(request, "products/list.html", context)
+
+
+@require_http_methods(["GET", "POST"])
+def product_create(request: HttpRequest) -> HttpResponse:
+    form = ProductForm(request.POST if request.method == "POST" else None)
+    if request.method == "POST" and form.is_valid():
+        product = form.save()
+        return redirect(product)
+
+    context = {
+        "page_title": "Добавить средство",
+        "form": form,
+        "submit_label": "Сохранить средство",
+    }
+    return render(request, "products/form.html", context)
 
 
 def product_detail(

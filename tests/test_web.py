@@ -1,5 +1,5 @@
 import inspect
-from datetime import date
+from datetime import date, timedelta
 from unittest.mock import patch
 
 from django.contrib.staticfiles import finders
@@ -8,6 +8,7 @@ from django.template.loader import render_to_string
 from django.test import Client, override_settings
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
+from django.utils.timezone import localdate
 
 from products.models import Brand, Category, Product
 
@@ -25,10 +26,95 @@ def test_named_routes() -> None:
     assert reverse("products:list") == "/products/"
     assert reverse("products:attention") == "/products/attention/"
     assert reverse("products:statistics") == "/products/statistics/"
+    assert reverse("products:create") == "/products/create/"
     assert reverse(
         "products:detail",
         args=["tonalnyi-krem-1"],
     ) == "/products/tonalnyi-krem-1/"
+
+
+def test_product_create_page_displays_modelform() -> None:
+    response = make_client().get(reverse("products:create"))
+    html = response.content.decode()
+
+    assert response.status_code == 200
+    assert response.templates[0].name == "products/form.html"
+    assert response.context["form"].is_bound is False
+    assert "Добавить средство" in html
+    assert 'name="csrfmiddlewaretoken"' in html
+    assert 'name="expiry_date"' in html
+    assert 'type="date"' in html
+
+
+def test_product_create_saves_valid_post_and_redirects() -> None:
+    brand = Brand.objects.get(name="Maybelline")
+    category = Category.objects.get(name="Глаза")
+    response = make_client().post(
+        reverse("products:create"),
+        {
+            "name": "Карандаш для глаз",
+            "brand": brand.pk,
+            "category": category.pk,
+            "quantity": 3,
+            "expiry_date": localdate() + timedelta(days=180),
+        },
+    )
+    product = Product.objects.get(name="Карандаш для глаз")
+
+    try:
+        assert response.status_code == 302
+        assert response.url == product.get_absolute_url()
+    finally:
+        product.delete()
+
+
+def test_product_create_shows_errors_without_saving() -> None:
+    brand = Brand.objects.get(name="Estel")
+    category = Category.objects.get(name="Волосы")
+    products_before = Product.objects.count()
+    response = make_client().post(
+        reverse("products:create"),
+        {
+            "name": "Просроченный кондиционер",
+            "brand": brand.pk,
+            "category": category.pk,
+            "quantity": 1,
+            "expiry_date": localdate() - timedelta(days=1),
+        },
+    )
+    html = response.content.decode()
+
+    assert response.status_code == 200
+    assert Product.objects.count() == products_before
+    assert "Срок годности не может быть в прошлом" in html
+    assert "Просроченный кондиционер" in html
+    assert 'id="id_expiry_date_helptext"' in html
+    assert 'id="id_expiry_date_error"' in html
+
+
+def test_product_create_rejects_post_without_csrf_token() -> None:
+    response = Client(
+        HTTP_HOST="localhost",
+        enforce_csrf_checks=True,
+    ).post(reverse("products:create"), {})
+
+    assert response.status_code == 403
+
+
+def test_product_create_escapes_bound_values() -> None:
+    response = make_client().post(
+        reverse("products:create"),
+        {
+            "name": "<script>alert('test')</script>",
+            "quantity": 0,
+            "expiry_date": localdate() + timedelta(days=30),
+        },
+    )
+    html = response.content.decode()
+
+    assert response.status_code == 200
+    assert "&lt;script&gt;alert(&#x27;test&#x27;)&lt;/script&gt;" in html
+    assert "<script>alert('test')</script>" not in html
 
 
 def test_base_template_loads_shared_navigation() -> None:

@@ -1,6 +1,8 @@
 from django import forms
+from django.core.exceptions import ValidationError
+from django.utils.timezone import localdate
 
-from products.models import Category
+from products.models import Category, Product
 
 
 PRODUCT_SORT_CHOICES = (
@@ -39,3 +41,43 @@ class ProductFilterForm(forms.Form):
 
     def clean_sort(self) -> str:
         return self.cleaned_data["sort"] or "expiry"
+
+
+class ProductForm(forms.ModelForm):
+    class Meta:
+        model = Product
+        fields = (
+            "name",
+            "brand",
+            "category",
+            "quantity",
+            "expiry_date",
+        )
+        widgets = {
+            "name": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "Например, увлажняющий крем",
+                }
+            ),
+            "brand": forms.Select(attrs={"class": "form-select"}),
+            "category": forms.Select(attrs={"class": "form-select"}),
+            "quantity": forms.NumberInput(
+                attrs={"class": "form-control", "min": 0}
+            ),
+            "expiry_date": forms.DateInput(
+                attrs={"class": "form-control", "type": "date"}
+            ),
+        }
+        help_texts = {
+            "quantity": "Укажите количество единиц в наличии.",
+            "expiry_date": "Дата должна быть сегодняшней или будущей.",
+        }
+
+    def clean_expiry_date(self):
+        expiry_date = self.cleaned_data["expiry_date"]
+        if expiry_date < localdate():
+            raise ValidationError(
+                "Срок годности не может быть в прошлом."
+            )
+        return expiry_date
